@@ -1,7 +1,8 @@
 import dotenv from 'dotenv'
 import fastify from "fastify"
 import mongoose from 'mongoose'
-
+//routes
+import petsRoutes from './routes/pets.js'
 
 dotenv.config()
 
@@ -19,6 +20,9 @@ try {
 } catch (e) {
   console.error(e);
 }
+
+//Register routes
+app.register(petsRoutes)
 
 //set application listening on localhost
 try {
