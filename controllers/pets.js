@@ -31,8 +31,28 @@ async function update(req, res) {
   }
 }
 
+async function deletePet(req, res) {
+  try {
+    const pet = await Pet.findByIdAndDelete(req.params.petId)
+    res.status(200).send(pet)
+  } catch (error) {
+    res.status(500).send(error)
+  }
+}
+
+async function show(req, res) {
+  try {
+    const pet = await Pet.findById(req.params.petId)
+    res.status(200).send(pet)
+  } catch (error) {
+    res.status(500).send(error)
+  }
+}
+
 export {
   index,
   create,
-  update
+  update,
+  deletePet as delete,
+  show,
 }
