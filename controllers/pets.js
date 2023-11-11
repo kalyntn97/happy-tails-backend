@@ -18,7 +18,21 @@ async function create(req, res) {
   }
 }
 
+async function update(req, res) {
+  try {
+    const pet = await Pet.findByIdAndUpdate(
+      req.params.petId,
+      req.body,
+      { new : true }
+    )
+    res.status(200).send(pet)
+  } catch (error) {
+    res.status(500).send(error)
+  }
+}
+
 export {
   index,
   create,
+  update
 }

@@ -22,7 +22,12 @@ try {
 }
 
 //Register routes
-app.register(petsRoutes)
+app.register(petsRoutes, { prefix: '/api/pets' })
+
+//handle root route
+app.get('/', async function handler (request, reply) {
+  return { hello: 'world' }
+})
 
 //set application listening on localhost
 try {
@@ -32,7 +37,4 @@ try {
   process.exit(1)
 }
 
-//handle root route
-app.get('/', async function handler (request, reply) {
-  return { hello: 'world' }
-})
+
