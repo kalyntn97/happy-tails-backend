@@ -1,11 +1,12 @@
+import { fastify } from 'fastify'
 import * as petsCtrl from '../controllers/pets.js'
 
-const petsRoutes = async (app, opts, done) => {
-  app.get('/', petsCtrl.index)
-  app.get('/:petId', petsCtrl.show)
-  app.post('/', petsCtrl.create)
-  app.put('/:petId', petsCtrl.update)
-  app.delete('/:petId', petsCtrl.delete)
+const petsRoutes = async (fastify, opts, done) => {
+  fastify.get('/', petsCtrl.index)
+  fastify.get('/:petId', petsCtrl.show)
+  fastify.post('/', petsCtrl.create)
+  fastify.put('/:petId', petsCtrl.update)
+  fastify.delete('/:petId', petsCtrl.delete)
 
   done()
 }

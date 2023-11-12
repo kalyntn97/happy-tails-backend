@@ -1,40 +1,42 @@
-import dotenv from 'dotenv'
 import fastify from "fastify"
-import mongoose from 'mongoose'
+import env from 'dotenv'
+import db from './config/database.js'
 //routes
+import usersRoutes from './routes/users.js'
 import petsRoutes from './routes/pets.js'
 
-dotenv.config()
-
-const Port = process.env.PORT
+env.config()
 const uri = process.env.CONNECT_DB
+
+if (!uri) {
+  console.error('Error: MongoDB URI is not defined. Make sure CONNECT_DB environment variable is set.')
+}
 
 //initialize fastify
 const app = fastify({
   logger: true
 })
 
-//connect fastify to mongoose
-try {
-  mongoose.connect(uri);
-} catch (e) {
-  console.error(e);
-}
-
 //Register routes
 app.register(petsRoutes, { prefix: '/api/pets' })
+app.register(db, { uri })
+app.register(usersRoutes, { prefix: '/api' })
 
 //handle root route
-app.get('/', async function handler (request, reply) {
+app.get('/', async function handler (req, reply) {
   return { hello: 'world' }
 })
 
 //set application listening on localhost
-try {
-  await app.listen({ port: Port })
-} catch (err) {
-  app.log.error(err)
-  process.exit(1)
+const start = async () => {
+  try {
+    await app.listen({ port : process.env.PORT}) 
+  } catch (error){
+      app.log.error(error)
+      process.exit(1)
+  }
 }
+
+start()
 
 
