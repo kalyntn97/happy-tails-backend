@@ -41,12 +41,11 @@ export async function login(req, reply) {
   if (!process.env.CLOUDINARY_URL) {
     throw new Error('no CLOUDINARY_URL in back-end .env file')
   }
-
   const user = await User.findOne({ username: req.body.username })
+
   if (!user) throw new Error('User not found')
 
   await req.user.generateToken()
-
   reply.send({ status: 'You are logged in', user: req.user })
 }
 
@@ -58,6 +57,7 @@ export async function logout(req, reply) {
     const loggedOutUser = await req.user.save()
     reply.send({ status: 'You are logged out!', user: loggedOutUser })
   } catch (error) {
+    console.log(error)
     reply.status(500).send(error)
   }
 }
@@ -71,6 +71,7 @@ export async function changePassword(req, reply) {
   
     reply.send({ status: 'Your password has been changed', user: req.user })
   } catch (error) {
+    console.log(error)
     reply.status(500).send(error)
   }
 }

@@ -2,7 +2,7 @@ import FastifyAuth from '@fastify/auth'
 import * as authCtrl from '../controllers/auth.js'
 import { verifyUsernameAndPassword, verifyJWT } from '../middleware/auth.js'
 
-const usersRoutes = async (fastify, opts) => {
+const usersRoutes = async (fastify, opts, done) => {
   fastify
     .decorate('asyncVerifyJWT', verifyJWT)
     .decorate('asyncVerifyUsernameAndPassword', verifyUsernameAndPassword)
@@ -49,9 +49,10 @@ const usersRoutes = async (fastify, opts) => {
         method: [ 'POST', 'HEAD' ],
         url: '/change-password',
         logLevel: 'warn',
-        preHandler: fastify.auth([ fastify.asyncVerifyJWT ]),
+        preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),
         handler: authCtrl.changePassword
       })     
     })
+  done()
 }
-export default usersRoutes
+export { usersRoutes }

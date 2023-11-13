@@ -2,8 +2,9 @@ import fastify from "fastify"
 import env from 'dotenv'
 import db from './config/database.js'
 //routes
-import usersRoutes from './routes/users.js'
-import petsRoutes from './routes/pets.js'
+import { usersRoutes } from './routes/users.js'
+import { petsRoutes } from './routes/pets.js'
+import { profilesRoutes } from "./routes/profiles.js"
 
 env.config()
 const uri = process.env.CONNECT_DB
@@ -21,6 +22,7 @@ const app = fastify({
 app.register(petsRoutes, { prefix: '/api/pets' })
 app.register(db, { uri })
 app.register(usersRoutes, { prefix: '/api' })
+app.register(profilesRoutes, { prefix: '/api/profiles'})
 
 //handle root route
 app.get('/', async function handler (req, reply) {
