@@ -1,13 +1,19 @@
+import FastifyAuth from '@fastify/auth'
+import { verifyJWT } from '../middleware/auth.js'
 import * as petsCtrl from '../controllers/pets.js'
 
-const petsRoutes = async (app, opts, done) => {
-  app.get('/', petsCtrl.index)
-  app.get('/:petId', petsCtrl.show)
-  app.post('/', petsCtrl.create)
-  app.put('/:petId', petsCtrl.update)
-  app.delete('/:petId', petsCtrl.delete)
-
+const petsRoutes = async (fastify, opts, done) => {
+  fastify
+    .decorate('asyncVerifyJWT', verifyJWT)
+    .register(FastifyAuth)
+    .after(() => {
+      fastify.addHook('preHandler', fastify.auth([fastify.asyncVerifyJWT]))
+    })
+    fastify.get('/', petsCtrl.index)
+    fastify.get('/:petId', petsCtrl.show)
+    fastify.post('/', petsCtrl.create)
+    fastify.put('/:petId', petsCtrl.update)
   done()
 }
 
-export default petsRoutes
+export { petsRoutes }
