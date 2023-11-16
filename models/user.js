@@ -10,6 +10,8 @@ const userSchema = new Schema({
     password: { type: String, required: true },
     tokens: [{ token: { type: String, required: true }}],
     profile: { type: Schema.Types.ObjectId, ref: 'Profile' }
+}, {
+    timestamps: true
 })
 
 // encrypt password using bcrypt conditionally only if the user is newly created.

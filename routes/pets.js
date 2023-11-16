@@ -13,6 +13,7 @@ const petsRoutes = async (fastify, opts, done) => {
     fastify.get('/:petId', petsCtrl.show)
     fastify.post('/', petsCtrl.create)
     fastify.put('/:petId', petsCtrl.update)
+    fastify.delete('/:petId', petsCtrl.delete)
   done()
 }
 

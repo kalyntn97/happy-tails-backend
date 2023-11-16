@@ -5,6 +5,7 @@ import db from './config/database.js'
 import { usersRoutes } from './routes/users.js'
 import { petsRoutes } from './routes/pets.js'
 import { profilesRoutes } from "./routes/profiles.js"
+import { healthCardsRoutes } from "./routes/healthCards.js"
 
 env.config()
 const uri = process.env.CONNECT_DB
@@ -19,10 +20,11 @@ const app = fastify({
 })
 
 //Register routes
-app.register(petsRoutes, { prefix: '/api/pets' })
 app.register(db, { uri })
+app.register(profilesRoutes, { prefix: '/api/profiles' })
 app.register(usersRoutes, { prefix: '/api' })
-app.register(profilesRoutes, { prefix: '/api/profiles'})
+app.register(petsRoutes, { prefix: '/api/pets' })
+app.register(healthCardsRoutes, { prefix: '/api/health-cards' })
 
 //handle root route
 app.get('/', async function handler (req, reply) {

@@ -7,6 +7,8 @@ const profileSchema = new Schema({
   photo: String,
   bio: String,
   pets: [{type: Schema.Types.ObjectId, ref: 'Pet'}]
+}, {
+  timestamps: true
 })
 
 const Profile = mongoose.model('Profile', profileSchema)

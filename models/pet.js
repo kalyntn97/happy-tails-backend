@@ -8,6 +8,9 @@ const petSchema = new Schema({
   species: { type: String },
   breed: { type: String },
   photo: { type: String},
+  healthCard: { type: Schema.Types.ObjectId, ref: 'HealthCard'},
+}, {
+  timestamps: true
 })
 
 const Pet = mongoose.model('Pet', petSchema)
