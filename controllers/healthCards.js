@@ -80,10 +80,26 @@ async function deleteHealthCard(req, reply) {
   }
 }
 
+async function deleteVetCard(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
+    vetCard.deleteOne()
+    await healthCard.save()
+    reply.code(200).send(vetCard)
+  } catch (error) {
+    console.log(error)
+    reply.code(500).send(error)
+  }
+}
+
+
+
 export {
   index,
   create,
   show,
   addVetCard,
   deleteHealthCard as delete,
+  deleteVetCard,
 }

@@ -12,8 +12,9 @@ const healthCardsRoutes = async (fastify, opts, done) => {
     fastify.get('/', healthCardsCtrl.index)
     fastify.get('/:healthCardId', healthCardsCtrl.show)
     fastify.post('/', healthCardsCtrl.create)
-    fastify.put('/:healthCardId/add-vet-card', healthCardsCtrl.addVetCard)
+    fastify.put('/:healthCardId/vet-cards', healthCardsCtrl.addVetCard)
     fastify.delete('/:healthCardId', healthCardsCtrl.delete)
+    fastify.delete('/:healthCardId/vet-cards/:vetCardId', healthCardsCtrl.deleteVetCard)
   done()
 }
 
