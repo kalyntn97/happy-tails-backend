@@ -28,20 +28,20 @@ async function index(req, reply) {
   }
 }
 
-async function create(req, reply) {
-  try {
-    const healthCard = await HealthCard.create(req.body)
-    const pet = await Pet.findById(healthCard.pet)
-    const newHealthCard = await HealthCard.findById(healthCard._id)
-    .populate({ path: 'pet' })
-    pet.healthCard = newHealthCard._id
-    await pet.save()
-    reply.code(200).send(newHealthCard)
-  } catch (error) {
-    console.log(error)
-    reply.code(500).send(error)
-  }
-}
+// async function create(req, reply) {
+//   try {
+//     const healthCard = await HealthCard.create(req.body)
+//     const pet = await Pet.findById(healthCard.pet)
+//     const newHealthCard = await HealthCard.findById(healthCard._id)
+//     .populate({ path: 'pet' })
+//     pet.healthCard = newHealthCard._id
+//     await pet.save()
+//     reply.code(200).send(newHealthCard)
+//   } catch (error) {
+//     console.log(error)
+//     reply.code(500).send(error)
+//   }
+// }
 
 async function show(req, reply) {
   try {
@@ -70,15 +70,15 @@ async function addVetCard(req, reply) {
   }
 }
 
-async function deleteHealthCard(req, reply) {
-  try {
-    const healthCard = await HealthCard.findByIdAndDelete(req.params.healthCardId)
-    reply.code(200).send(healthCard)
-  } catch {
-    console.log(error)
-    reply.code(500).send(error)
-  }
-}
+// async function deleteHealthCard(req, reply) {
+//   try {
+//     const healthCard = await HealthCard.findByIdAndDelete(req.params.healthCardId)
+//     reply.code(200).send(healthCard)
+//   } catch {
+//     console.log(error)
+//     reply.code(500).send(error)
+//   }
+// }
 
 async function deleteVetCard(req, reply) {
   try {
@@ -93,13 +93,30 @@ async function deleteVetCard(req, reply) {
   }
 }
 
-
+async function updateVetCard(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
+    vetCard.name = req.body.name
+    vetCard.isVaccine = req.body.isVaccine
+    vetCard.type = req.body.type
+    vetCard.frequency = req.body.frequency
+    vetCard.lastDone = req.body.lastDone
+    vetCard.nextDue = req.body.nextDue
+    await healthCard.save()
+    reply.code(200).send(vetCard)
+  } catch (error) {
+    console.log(error)
+    reply.code(500).send(error)
+  }
+}
 
 export {
   index,
-  create,
+  // create,
   show,
   addVetCard,
-  deleteHealthCard as delete,
+  // deleteHealthCard as delete,
   deleteVetCard,
+  updateVetCard,
 }

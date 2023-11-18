@@ -1,5 +1,6 @@
 import { Pet } from "../models/pet.js"
 import { Profile } from "../models/profile.js"
+import { HealthCard } from "../models/healthCard.js"
 
 async function index(req, reply) {
   try {
@@ -21,6 +22,9 @@ async function create(req, reply) {
       { new: true }
     )
     pet.parent = profile
+    const healthCard = await HealthCard.create({ 'pet': pet._id })
+    pet.healthCard = healthCard._id
+    await pet.save()
     reply.code(201).send(pet)
   } catch (error) {
     console.log(error)
@@ -45,6 +49,7 @@ async function update(req, reply) {
 async function deletePet(req, reply) {
   try {
     const pet = await Pet.findByIdAndDelete(req.params.petId)
+    await HealthCard.findByIdAndDelete(pet.healthCard)
     reply.code(200).send(pet)
   } catch (error) {
     console.log(error)
