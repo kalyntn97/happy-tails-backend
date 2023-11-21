@@ -6,6 +6,7 @@ import { usersRoutes } from './routes/users.js'
 import { petsRoutes } from './routes/pets.js'
 import { profilesRoutes } from "./routes/profiles.js"
 import { healthCardsRoutes } from "./routes/healthCards.js"
+import { careCardsRoutes } from "./routes/careCards.js"
 
 env.config()
 const uri = process.env.CONNECT_DB
@@ -25,6 +26,7 @@ app.register(profilesRoutes, { prefix: '/api/profiles' })
 app.register(usersRoutes, { prefix: '/api' })
 app.register(petsRoutes, { prefix: '/api/pets' })
 app.register(healthCardsRoutes, { prefix: '/api/health-cards' })
+app.register(careCardsRoutes, { prefix: '/api/care-cards' })
 
 //handle root route
 app.get('/', async function handler (req, reply) {
