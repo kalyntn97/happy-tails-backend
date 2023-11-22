@@ -5,9 +5,13 @@ async function create(req, reply) {
   try {
     const times = req.body.times
     const freq = req.body.frequency
-
+    
+    const currentYear = (new Date).getFullYear()
+    const currentMonth = (new Date).getMonth() + 1
+    
     req.body.trackers.push({
-      name: currentMonth + '-' + currentYear, total: '', done: '', skipped: '', left: ''
+      name: freq == 'yearly' ? currentYear : currentMonth + '-' + currentYear, 
+      total: '', done: '', skipped: '', left: ''
     })
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
     
@@ -41,16 +45,16 @@ async function update(req, reply) {
     const times = req.body.times
     const freq = req.body.frequency
 
-    const careCard = await CareCard.findById(req.params.careCardId)
-    const newTracker = careCard.trackers[careCard.trackers.length - 1]
-    
-    calTotal(times, freq, newTracker)
-
-    await CareCard.updateOne(
-      req.body.careCardId,
+    const careCard = await CareCard.findByIdAndUpdate(
+      {'_id': req.params.careCardId},
       req.body,
       { new: true }
     )
+    const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
+
+    calTotal(times, freq, updatedTracker)
+    
+    await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
     console.log(error)
@@ -93,7 +97,7 @@ async function show(req, reply) {
   }
 }
 
-function getCurrentDate() {
+function calTotal(times, freq, tracker) {
   const currentDate = new Date()
   const currentYear = currentDate.getFullYear()
   const currentMonth = currentDate.getMonth() + 1
@@ -103,19 +107,15 @@ function getCurrentDate() {
 
   const daysInMonth = lastDayOfMonth.getDate()
   const weeksInMonth = Math.ceil((daysInMonth + firstDayOfMonth.getDay()) / 7)
-}
-
-function calTotal(times, freq, newTracker) {
-  getCurrentDate()
 
   if (freq === 'daily') {
-    times === '' ? newTracker['total'] = daysInMonth : newTracker['total'] = times*daysInMonth
+    times === '' ? tracker['total'] = daysInMonth : tracker['total'] = times*daysInMonth
   } else if (freq === 'weekly') {
-    times === '' ? newTracker['total'] = weeksInMonth : newTracker['total'] = times*weeksInMonth
+    times === '' ? tracker['total'] = weeksInMonth : tracker['total'] = times*weeksInMonth
   } else if (freq === 'monthly') {
-    times === '' ? newTracker['total'] = 1 : newTracker['total'] = times
+    times === '' ? tracker['total'] = 1 : tracker['total'] = times
   } else if (freq === 'yearly') {
-    times === '' ? newTracker['total'] = 1 : newTracker['total'] = times
+    times === '' ? tracker['total'] = 1 : tracker['total'] = times
   }
 }
 
