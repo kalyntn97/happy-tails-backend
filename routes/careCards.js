@@ -8,8 +8,10 @@ const careCardsRoutes = async (fastify, opts, done) => {
     .register(FastifyAuth)
     .after(() => {
       fastify.addHook('preHandler', fastify.auth([fastify.asyncVerifyJWT]))
-    })   
+    })     
     fastify.post('/', careCardsCtrl.create)
+    fastify.put('/:careCardId', careCardsCtrl.update)
+    fastify.delete('/:careCardId', careCardsCtrl.delete)
   done()
 }
 

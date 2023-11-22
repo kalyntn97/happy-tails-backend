@@ -9,7 +9,7 @@ const petSchema = new Schema({
   breed: { type: String },
   photo: { type: String },
   healthCard: { type: Schema.Types.ObjectId, ref: 'HealthCard' },
-  careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
+  // careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
 }, {
   timestamps: true
 })
