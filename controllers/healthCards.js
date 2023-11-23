@@ -54,6 +54,7 @@ async function show(req, reply) {
 
 async function addVetCard(req, reply) {
   try {
+    req.body.isVaccine = !!req.body.isVaccine
     const healthCard = await HealthCard.findByIdAndUpdate(
       req.params.healthCardId,
       {$push: {vetCards: req.body}},
@@ -63,9 +64,10 @@ async function addVetCard(req, reply) {
 
     if (newVetCard.lastDone) {
       const freq = newVetCard.frequency
+      const times = newVetCard.times
       const dueDate = new Date(newVetCard.lastDone)
       
-      calDueDate(freq, dueDate)
+      calDueDate(freq, times, dueDate)
 
       newVetCard.nextDue = dueDate
     } else {
@@ -80,7 +82,7 @@ async function addVetCard(req, reply) {
   }
 }
 
-function calDueDate(freq, dueDate) {
+function calDueDate(freq, times, dueDate) {
   const lastDayOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0)
   const daysInMonth = lastDayOfMonth.getDate()
 
@@ -117,6 +119,7 @@ async function deleteVetCard(req, reply) {
 
 async function updateVetCard(req, reply) {
   try {
+    req.body.isVaccine = !!req.body.isVaccine
     const healthCard = await HealthCard.findById(req.params.healthCardId)
     const vetCard = healthCard.vetCards.id(req.params.vetCardId)
     vetCard.name = req.body.name
@@ -125,6 +128,33 @@ async function updateVetCard(req, reply) {
     vetCard.times = req.body.times
     vetCard.frequency = req.body.frequency
     vetCard.lastDone = req.body.lastDone
+
+    const freq = vetCard.frequency
+    const times = vetCard.times
+    const dueDate = new Date(vetCard.lastDone)
+    calDueDate(freq, times, dueDate)
+    vetCard.nextDue = dueDate
+
+    await healthCard.save()
+    reply.code(200).send(vetCard)
+  } catch (error) {
+    console.log(error)
+    reply.code(500).send(error)
+  }
+}
+
+async function checkDone(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
+    
+    vetCard.lastDone = req.body.lastDone
+    const freq = vetCard.frequency
+    const times = vetCard.times
+    const dueDate = new Date(vetCard.lastDone)
+    calDueDate(freq, times, dueDate)
+    vetCard.nextDue = dueDate
+
     await healthCard.save()
     reply.code(200).send(vetCard)
   } catch (error) {
@@ -141,4 +171,5 @@ export {
   // deleteHealthCard as delete,
   deleteVetCard,
   updateVetCard,
+  checkDone,
 }

@@ -9,8 +9,7 @@ const vetCardSchema = new Schema({
   times: { type: Number, default: 1 },
   frequency: { type: String},
   lastDone: { type: Date },
-  nextDue: { type: Date },
-  isDone: { type: Boolean },
+  nextDue: { type: Date, default: new Date() },
 }, {
   timestamps: true
 })
