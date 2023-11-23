@@ -11,11 +11,12 @@ async function create(req, reply) {
     
     req.body.trackers.push({
       name: freq == 'yearly' ? currentYear : currentMonth + '-' + currentYear, 
-      total: '', done: '', skipped: '', left: ''
+      done: 0, skipped: 0
     })
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
     
     calTotal(times, freq, newTracker)
+    newTracker['left'] = newTracker['total']
     
     const careCard = await CareCard.create(req.body)
     // const pet = await Pet.findById(careCard.pet)
@@ -42,8 +43,7 @@ async function deleteCareCard(req, reply) {
 
 async function update(req, reply) {
   try {
-    const currentYear = (new Date).getFullYear()
-    const currentMonth = (new Date).getMonth() + 1
+    const { currentYear, currentMonth } = getCurrentDate()
 
     const times = req.body.times
     const freq = req.body.frequency
@@ -55,7 +55,9 @@ async function update(req, reply) {
     )
     const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
     calTotal(times, freq, updatedTracker)
-    
+
+    updatedTracker['left'] = updatedTracker['total'] - updatedTracker['done'] - updatedTracker['skipped']
+
     updatedTracker['name'] = freq == 'yearly' ? currentYear : currentMonth + '-' + currentYear 
 
     await careCard.save()
@@ -81,19 +83,30 @@ async function show(req, reply) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
     .populate({ path: 'pet' })
-    if (careCard.freq !== 'yearly') {
-      const currentMonth = (new Date).getMonth() + 1
-      const latestTracker = careCard.trackers[careCard.trackers.length - 1]
-      const latestMonth = latestTracker['name'].slice(0, 2)
-  
-      if (currentMonth !== latestMonth) {
+    const { currentYear, currentMonth } = getCurrentDate()
+    const latestTracker = careCard.trackers[careCard.trackers.length - 1]
+    const latestMonth = latestTracker['name'].slice(0, 2)
+    const latestYear = latestTracker['name'].slice(-4)
+
+    if (careCard.freq === 'yearly') {
+      if (currentYear != latestYear) {
+        careCard.trackers.push({
+          name: currentYear, 
+          total: latestTracker['total'], 
+          done: 0, skipped: 0, left: latestTracker['total']
+        })
+      }
+    } else {
+      if (currentMonth != latestMonth) {
         careCard.trackers.push({
           name: currentMonth + '-' + currentYear, 
           total: latestTracker['total'], 
-          done: '', skipped: '', left: ''
+          done: 0, skipped: 0, left: latestTracker['total']
         })
       }
     }
+    latestTracker['left'] = latestTracker['total'] - latestTracker['done'] - latestTracker['skipped']
+
     await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
@@ -102,10 +115,52 @@ async function show(req, reply) {
   }
 }
 
+async function updateTracker(req, reply, updateFunction) {
+  try {
+    const careCard = await CareCard.findById(req.params.careCardId)
+    const tracker = careCard.trackers.id(req.params.trackerId)
+
+    updateFunction(tracker)
+    tracker['left'] = tracker['total'] - tracker['done'] - tracker['skipped']
+
+    await careCard.save()
+    reply.code(200).send(tracker)
+  } catch (error) {
+    console.log(error)
+    reply.code(500).send(error)
+  }
+}
+
+async function checkDone(req, reply) {
+  const updateFunction = (tracker) => {
+    tracker['done']++
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
+async function skip(req, reply) {
+  const updateFunction = (tracker) => {
+    tracker['skipped']++
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
+async function uncheck(req, reply) {
+  const updateFunction = (tracker) => {
+    tracker['done']--
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
+async function unskip(req, reply) {
+  const updateFunction = (tracker) => {
+    tracker['skipped']--
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
 function calTotal(times, freq, tracker) {
-  const currentDate = new Date()
-  const currentYear = currentDate.getFullYear()
-  const currentMonth = currentDate.getMonth() + 1
+  const { currentYear, currentMonth } = getCurrentDate()
 
   const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1)
   const lastDayOfMonth = new Date(currentYear, currentMonth, 0)
@@ -124,10 +179,26 @@ function calTotal(times, freq, tracker) {
   }
 }
 
+const getCurrentDate = () => {
+  const currentDate = new Date()
+  const currentYear = currentDate.getFullYear()
+  const currentMonth = currentDate.getMonth() + 1
+  
+  return {
+    currentDate,
+    currentYear,
+    currentMonth,
+  }
+}
+
 export {
   create,
   deleteCareCard as delete,
   update,
   index,
   show,
+  checkDone,
+  skip,
+  uncheck,
+  unskip,
 }
