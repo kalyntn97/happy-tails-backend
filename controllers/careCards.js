@@ -44,9 +44,7 @@ async function deleteCareCard(req, reply) {
 async function update(req, reply) {
   try {
     const { currentYear, currentMonth } = getCurrentDate()
-
-    const times = req.body.times
-    const freq = req.body.frequency
+    const { times, frequency } = req.body
 
     const careCard = await CareCard.findByIdAndUpdate(
       {'_id': req.params.careCardId},
@@ -54,11 +52,10 @@ async function update(req, reply) {
       { new: true }
     )
     const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
-    calTotal(times, freq, updatedTracker)
+    calTotal(times, frequency, updatedTracker)
 
+    updatedTracker['name'] = frequency === 'yearly' ? currentYear : `${currentMonth}-${currentYear}`
     updatedTracker['left'] = updatedTracker['total'] - updatedTracker['done'] - updatedTracker['skipped']
-
-    updatedTracker['name'] = freq == 'yearly' ? currentYear : currentMonth + '-' + currentYear 
 
     await careCard.save()
     reply.code(200).send(careCard)
@@ -83,28 +80,10 @@ async function show(req, reply) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
     .populate({ path: 'pet' })
-    const { currentYear, currentMonth } = getCurrentDate()
     const latestTracker = careCard.trackers[careCard.trackers.length - 1]
-    const latestMonth = latestTracker['name'].slice(0, 2)
-    const latestYear = latestTracker['name'].slice(-4)
 
-    if (careCard.freq === 'yearly') {
-      if (currentYear != latestYear) {
-        careCard.trackers.push({
-          name: currentYear, 
-          total: latestTracker['total'], 
-          done: 0, skipped: 0, left: latestTracker['total']
-        })
-      }
-    } else {
-      if (currentMonth != latestMonth) {
-        careCard.trackers.push({
-          name: currentMonth + '-' + currentYear, 
-          total: latestTracker['total'], 
-          done: 0, skipped: 0, left: latestTracker['total']
-        })
-      }
-    }
+    createNewTracker(careCard, latestTracker)
+
     latestTracker['left'] = latestTracker['total'] - latestTracker['done'] - latestTracker['skipped']
 
     await careCard.save()
@@ -157,6 +136,21 @@ async function unskip(req, reply) {
     tracker['skipped']--
   }
   await updateTracker(req, reply, updateFunction)
+}
+
+function createNewTracker(careCard, latestTracker) {
+  const { currentYear, currentMonth } = getCurrentDate()
+  const isNewYear = currentYear != latestTracker['name'].slice(-4)
+  const isNewMonth = currentMonth != latestTracker['name'].slice(0, 2)
+
+  if ((careCard.freq === 'yearly' && isNewYear) || (careCard.freq !== 'yearly' && isNewMonth)) {
+    careCard.trackers.push({
+      name: careCard.freq === 'yearly' ? currentYear : `${currentMonth}-${currentYear}`,
+      total: latestTracker['total'],
+      done: 0, skipped: 0,
+      left: latestTracker['total']
+    })
+  }
 }
 
 function calTotal(times, freq, tracker) {
