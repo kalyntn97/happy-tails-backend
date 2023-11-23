@@ -15,7 +15,7 @@ const trackerSchema = new Schema({
 const careCardSchema = new Schema({
   pet: { type: Schema.Types.ObjectId, ref: 'Pet' , required: true },
   name: { type: String },
-  times: { types: Number },
+  times: { type: Number, default: 1 },
   frequency: { type: String },
   trackers: [trackerSchema]
 }, {

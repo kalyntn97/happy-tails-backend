@@ -1,8 +1,5 @@
-import { errWithCause } from "pino-std-serializers"
 import { HealthCard } from "../models/healthCard.js"
-import { Pet } from "../models/pet.js"
-import { Profile } from "../models/profile.js"
-import mongoose from "mongoose"
+import { getCurrentDate } from "./helper.js"
 
 async function index(req, reply) {
   try {
@@ -47,6 +44,7 @@ async function show(req, reply) {
   try {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
     .populate({ path: 'pet'})
+    const vetCards = healthCard.vetCards
     reply.code(200).send(healthCard)    
   } catch (error) {
     console.log(error)
@@ -62,7 +60,19 @@ async function addVetCard(req, reply) {
       {new: true}
     )
     const newVetCard = healthCard.vetCards[healthCard.vetCards.length - 1]
+
+    if (newVetCard.lastDone) {
+      const freq = newVetCard.frequency
+      const dueDate = new Date(newVetCard.lastDone)
+      
+      calDueDate(freq, dueDate)
+
+      newVetCard.nextDue = dueDate
+    } else {
+      newVetCard.nextDue = new Date()
+    }
     // maybe add pet info
+    await newVetCard.save()
     reply.code(201).send(newVetCard)
   } catch (error) {
     console.log(error)
@@ -70,6 +80,18 @@ async function addVetCard(req, reply) {
   }
 }
 
+function calDueDate(freq, dueDate) {
+  const lastDayOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0)
+  const daysInMonth = lastDayOfMonth.getDate()
+
+  if (freq === 'monthly') {
+    dueDate.setDate(dueDate.getDate() + Math.ceil(daysInMonth / times))
+  } else if (freq === 'yearly') {
+    dueDate.setMonth(dueDate.getMonth() + Math.ceil(12 / times))
+  } else if (freq === 'years') {
+    dueDate.setFullYear(dueDate.getFullYear() + times)
+  }
+}
 // async function deleteHealthCard(req, reply) {
 //   try {
 //     const healthCard = await HealthCard.findByIdAndDelete(req.params.healthCardId)
@@ -100,9 +122,9 @@ async function updateVetCard(req, reply) {
     vetCard.name = req.body.name
     vetCard.isVaccine = req.body.isVaccine
     vetCard.type = req.body.type
+    vetCard.times = req.body.times
     vetCard.frequency = req.body.frequency
     vetCard.lastDone = req.body.lastDone
-    vetCard.nextDue = req.body.nextDue
     await healthCard.save()
     reply.code(200).send(vetCard)
   } catch (error) {

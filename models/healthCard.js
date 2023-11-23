@@ -6,9 +6,11 @@ const vetCardSchema = new Schema({
   name: { type: String },
   isVaccine: { type: Boolean },
   type: { type: String },
+  times: { type: Number, default: 1 },
   frequency: { type: String},
   lastDone: { type: Date },
   nextDue: { type: Date },
+  isDone: { type: Boolean },
 }, {
   timestamps: true
 })

@@ -1,21 +1,18 @@
 import { CareCard } from "../models/careCard.js"
-import { Pet } from "../models/pet.js"
+import { getCurrentDate } from "./helper.js"
 
 async function create(req, reply) {
   try {
-    const times = req.body.times
-    const freq = req.body.frequency
-    
-    const currentYear = (new Date).getFullYear()
-    const currentMonth = (new Date).getMonth() + 1
-    
+    const { times, frequency } = req.body
+    const { currentYear, currentMonth } = getCurrentDate()
+   
     req.body.trackers.push({
-      name: freq == 'yearly' ? currentYear : currentMonth + '-' + currentYear, 
+      name: frequency == 'yearly' ? currentYear : currentMonth + '-' + currentYear, 
       done: 0, skipped: 0
     })
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
     
-    calTotal(times, freq, newTracker)
+    calTotal(times, frequency, newTracker)
     newTracker['left'] = newTracker['total']
     
     const careCard = await CareCard.create(req.body)
@@ -154,34 +151,14 @@ function createNewTracker(careCard, latestTracker) {
 }
 
 function calTotal(times, freq, tracker) {
-  const { currentYear, currentMonth } = getCurrentDate()
-
-  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1)
-  const lastDayOfMonth = new Date(currentYear, currentMonth, 0)
-
-  const daysInMonth = lastDayOfMonth.getDate()
-  const weeksInMonth = Math.ceil((daysInMonth + firstDayOfMonth.getDay()) / 7)
+  const { daysInMonth, weeksInMonth } = getCurrentDate()
 
   if (freq === 'daily') {
-    times === '' ? tracker['total'] = daysInMonth : tracker['total'] = times*daysInMonth
+    tracker['total'] = times*daysInMonth
   } else if (freq === 'weekly') {
-    times === '' ? tracker['total'] = weeksInMonth : tracker['total'] = times*weeksInMonth
-  } else if (freq === 'monthly') {
-    times === '' ? tracker['total'] = 1 : tracker['total'] = times
-  } else if (freq === 'yearly') {
-    times === '' ? tracker['total'] = 1 : tracker['total'] = times
-  }
-}
-
-const getCurrentDate = () => {
-  const currentDate = new Date()
-  const currentYear = currentDate.getFullYear()
-  const currentMonth = currentDate.getMonth() + 1
-  
-  return {
-    currentDate,
-    currentYear,
-    currentMonth,
+    tracker['total'] = times*weeksInMonth
+  } else if (freq === 'monthly' || freq === 'yearly') {
+    tracker['total'] = times
   }
 }
 
