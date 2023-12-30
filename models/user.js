@@ -27,7 +27,7 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.generateToken = async function() {
     let user = this
     const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '72h' })
-    user.tokens = user.tokens.concat({ token });
+    user.tokens = user.tokens.concat({ token })
     await user.save()
     return token
 }
@@ -44,6 +44,7 @@ userSchema.statics.findByToken = async function(token) {
     } catch (error) {
         return error
     }
+    console.log(token)
     return await User.findOne({
         _id: decoded._id,
         'tokens.token': token

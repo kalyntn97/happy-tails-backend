@@ -1,6 +1,9 @@
 import fastify from "fastify"
 import env from 'dotenv'
 import db from './config/database.js'
+import cloudinary from 'cloudinary'
+import { CloudinaryStorage } from "multer-storage-cloudinary"
+import multer from "fastify-multer"
 //routes
 import { usersRoutes } from './routes/users.js'
 import { petsRoutes } from './routes/pets.js'
@@ -14,11 +17,29 @@ const uri = process.env.CONNECT_DB
 if (!uri) {
   console.error('Error: MongoDB URI is not defined. Make sure CONNECT_DB environment variable is set.')
 }
+//cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_KEY,
+  api_secret: process.env.CLOUD_SECRET
+})
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'happy-tails-backend',
+    allowedFormats: [ 'jpg', 'png' ],
+    transformation: [{ width: 800, height: 800, crop: 'limit' }]
+  }
+})
+
+const parser = multer({ storage })
 
 //initialize fastify
 const app = fastify({
   logger: true
 })
+app.decorate('multer', { parser })
 
 //Register routes
 app.register(db, { uri })

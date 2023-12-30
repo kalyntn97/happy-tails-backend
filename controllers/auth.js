@@ -38,15 +38,15 @@ export async function login(req, reply) {
   if (!process.env.JWT_SECRET) {
     throw new Error('no SECRET in back-end .env')
   }
-  if (!process.env.CLOUDINARY_URL) {
+  if (!process.env.CLOUD_KEY) {
     throw new Error('no CLOUDINARY_URL in back-end .env file')
   }
   const user = await User.findOne({ username: req.body.username })
 
   if (!user) throw new Error('User not found')
 
-  await req.user.generateToken()
-  reply.send({ status: 'You are logged in', user: req.user })
+  const token = await req.user.generateToken()
+  reply.send({ status: 'You are logged in', token })
 }
 
 export async function logout(req, reply) {
