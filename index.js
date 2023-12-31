@@ -1,9 +1,8 @@
 import fastify from "fastify"
+import multer from "fastify-multer"
 import env from 'dotenv'
 import db from './config/database.js'
-import cloudinary from 'cloudinary'
-import { CloudinaryStorage } from "multer-storage-cloudinary"
-import multer from "fastify-multer"
+import { v2 as cloudinary } from 'cloudinary'
 //routes
 import { usersRoutes } from './routes/users.js'
 import { petsRoutes } from './routes/pets.js'
@@ -24,24 +23,16 @@ cloudinary.config({
   api_secret: process.env.CLOUD_SECRET
 })
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'happy-tails-backend',
-    allowedFormats: [ 'jpg', 'png' ],
-    transformation: [{ width: 800, height: 800, crop: 'limit' }]
-  }
-})
-
-const parser = multer({ storage })
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
 //initialize fastify
 const app = fastify({
   logger: true
 })
-app.decorate('multer', { parser })
-
+app.decorate('upload', upload)
 //Register routes
+app.register(multer.contentParser)
 app.register(db, { uri })
 app.register(profilesRoutes, { prefix: '/api/profiles' })
 app.register(usersRoutes, { prefix: '/api' })
@@ -55,15 +46,13 @@ app.get('/', async function handler (req, reply) {
 })
 
 //set application listening on localhost
-const start = async () => {
+const start = () => {
   try {
-    await app.listen({ port : process.env.PORT}) 
+    app.listen({ port : process.env.PORT}) 
   } catch (error){
-      app.log.error(error)
-      process.exit(1)
+    app.log.error(error)
+    process.exit(1)
   }
 }
 
 start()
-
-

@@ -15,16 +15,20 @@
     "@fastify/auth": "^4.4.0",
     "@fastify/cors": "^7.0.0",
     "@fastify/mongodb": "^8.0.0",
+    "@fastify/multipart": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.1",
     "dotenv": "^16.3.1",
     "fastify": "^4.24.3",
     "fastify-multer": "^2.0.3",
     "fastify-plugin": "^4.5.1",
+    "fs": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.2.0",
     "mongoose": "^8.0.0",
     "multer-storage-cloudinary": "^4.0.0",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "streamifier": "^0.1.1",
+    "tmp-promise": "^3.0.3"
   }
 }

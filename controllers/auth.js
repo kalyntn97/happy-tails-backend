@@ -54,6 +54,7 @@ export async function logout(req, reply) {
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token
     })
+
     const loggedOutUser = await req.user.save()
     reply.send({ status: 'You are logged out!', user: loggedOutUser })
   } catch (error) {

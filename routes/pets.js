@@ -12,7 +12,7 @@ const petsRoutes = async (fastify, opts, done) => {
     fastify.get('/', petsCtrl.index)
     fastify.get('/:petId', petsCtrl.show)
     fastify.post('/', petsCtrl.create)
-    fastify.post('/:petId/add-photo', { preHandler: fastify.multer.parser.single('upload') }, petsCtrl.addPhoto)
+    fastify.patch('/:petId/add-photo', { preHandler: fastify.upload.single('file') }, petsCtrl.addPhoto)
     fastify.put('/:petId', petsCtrl.update)
     fastify.delete('/:petId', petsCtrl.delete)
   done()

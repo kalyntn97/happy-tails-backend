@@ -1,11 +1,12 @@
 import { Pet } from "../models/pet.js"
 import { Profile } from "../models/profile.js"
 import { HealthCard } from "../models/healthCard.js"
+import { promises as fsPromises } from 'fs'
+import tmp from 'tmp-promise'
+import { v2 as cloudinary } from 'cloudinary'
 
 async function index(req, reply) {
   try {
-    console.log('user profile', req.user, req.user.profile)
-
     const pets = await Pet.find()
     reply.code(200).send(pets)
   } catch (error) {
@@ -73,15 +74,40 @@ async function show(req, reply) {
 
 async function addPhoto(req, reply) {
   try {
+    console.log('file', req.file)
     const pet = await Pet.findById(req.params.petId)
-    pet.photo = req.file.path
+    const binaryData = req.file.buffer
+    const result = await uploadImage(binaryData)
+    pet.photo = result
     await pet.save()
-    reply.code(200).send(pet)
+    reply.code(200).send({message: 'Success', url: result})
   } catch (error) {
     console.log(error)
-    reply.code(500).send(error)
+    reply.code(500).send({message: 'Upload failed', error: error})
   }
 }
+
+async function uploadImage(content) {
+  try {
+    //create a temp file
+    const { path } = await tmp.file()
+    await fsPromises.writeFile(path, content)
+
+    //upload the temp file to Cloudinary
+    const result = await cloudinary.uploader.upload(path, {
+      folder: 'happy-tails',
+      eager: [{ width: 400, height: 400, crop: 'crop', gravity: 'face' }],
+    })
+
+    console.log('Cloudinary upload result: ', result)
+
+    return result.secure_url
+  } catch (error) {
+    console.error('Cloudinary error: ', error)
+    throw error
+  }
+}
+
 
 export {
   index,
