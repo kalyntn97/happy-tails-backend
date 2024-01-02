@@ -18,8 +18,6 @@ async function index(req, reply) {
 async function create(req, reply) {
   try {
     req.body.parent = req.user.profile
-    console.log('req.body.parent', req.body.parent)
-    console.log('req.user.profile', req.user.profile)
     const pet = await Pet.create(req.body)
     const profile = await Profile.findByIdAndUpdate(
       req.user.profile,
@@ -74,7 +72,7 @@ async function show(req, reply) {
 
 async function addPhoto(req, reply) {
   try {
-    console.log('file', req.file)
+    console.log('request file', req.file)
     const pet = await Pet.findById(req.params.petId)
     const binaryData = req.file.buffer
     const result = await uploadImage(binaryData)
