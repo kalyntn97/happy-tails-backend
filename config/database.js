@@ -23,4 +23,4 @@ const ConnectDB = async (fastify, options) => {
   }
 }
 
-export default fp(ConnectDB)
+export default fp( ConnectDB)
