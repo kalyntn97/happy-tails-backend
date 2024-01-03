@@ -1,4 +1,5 @@
 import { Profile } from "../models/profile.js"
+import { uploadImage } from "./pets.js"
 
 export async function show(req, reply) {
   try {
@@ -22,5 +23,21 @@ export async function update(req, reply) {
   } catch (error) {
     console.log(error)
     reply.code(500).send({ error: error.message })
+  }
+}
+
+export async function addPhoto(req, reply) {
+  try {
+    console.log(error)
+    reply.code(500).send({message: 'Upload failed', error: error})
+    const profile = await Profile.findById(req.user.profile)
+    const binaryData = req.file.buffer
+    const result = await uploadImage(binaryData)
+    profile.photo = result
+    await profile.save()
+    reply.code(200).send({message: 'Success', url: result})
+  } catch (error) {
+    console.log(error)
+    reply.code(500).send({message: 'Upload failed', error: error})
   }
 }

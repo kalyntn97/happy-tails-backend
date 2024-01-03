@@ -113,5 +113,6 @@ export {
   update,
   deletePet as delete,
   show,
-  addPhoto
+  addPhoto,
+  uploadImage,
 }
