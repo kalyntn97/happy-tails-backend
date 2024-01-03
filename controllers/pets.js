@@ -72,6 +72,7 @@ async function show(req, reply) {
 
 async function addPhoto(req, reply) {
   try {
+    console.log('request', req)
     console.log('request file', req.file)
     const pet = await Pet.findById(req.params.petId)
     const binaryData = req.file.buffer

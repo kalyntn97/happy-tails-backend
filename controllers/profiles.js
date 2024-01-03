@@ -18,7 +18,7 @@ export async function update(req, reply) {
       req.user.profile,
       req.body,
       { new: true }
-    )
+    ).populate({path: 'pets'})
     reply.code(200).send(profile)
   } catch (error) {
     console.log(error)
@@ -28,6 +28,7 @@ export async function update(req, reply) {
 
 export async function addPhoto(req, reply) {
   try {
+    console.log('request', req)
     console.log('request file', req.file)
     const profile = await Profile.findById(req.user.profile)
     const binaryData = req.file.buffer

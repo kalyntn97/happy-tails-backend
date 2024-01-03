@@ -12,7 +12,7 @@ const profilesRoutes = async (fastify, opts, done )=> {
     // profile route
     fastify.get('/', profilesCtrl.show)
     fastify.put('/update', profilesCtrl.update)
-    fastify.patch('/add-photo', profilesCtrl.addPhoto)
+    fastify.patch('/add-photo', { preHandler: fastify.upload.single('file') }, profilesCtrl.addPhoto)
   
   done()
 }
