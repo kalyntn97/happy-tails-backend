@@ -28,8 +28,7 @@ export async function update(req, reply) {
 
 export async function addPhoto(req, reply) {
   try {
-    console.log(error)
-    reply.code(500).send({message: 'Upload failed', error: error})
+    console.log('request file', req.file)
     const profile = await Profile.findById(req.user.profile)
     const binaryData = req.file.buffer
     const result = await uploadImage(binaryData)
