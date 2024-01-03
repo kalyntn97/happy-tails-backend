@@ -9,8 +9,10 @@ const profilesRoutes = async (fastify, opts, done )=> {
     .after(() => {
       fastify.addHook('preHandler', fastify.auth([fastify.asyncVerifyJWT]))
     })
-  fastify.get('/:profileId', profilesCtrl.show)
-
+    // profile route
+    fastify.get('/', profilesCtrl.show)
+    fastify.put('/update', profilesCtrl.update)
+  
   done()
 }
 

@@ -24,17 +24,6 @@ const usersRoutes = async (fastify, opts, done) => {
         handler: authCtrl.login
       })
     
-    // profile route
-      fastify.route({
-        method: [ 'GET', 'HEAD' ],
-        url: '/profile',
-        logLevel: 'warn',
-        preHandler: fastify.auth([ fastify.asyncVerifyJWT ]),
-        handler: async (req, reply) => {
-          reply.send({ status: 'Authenticated!', user: req.user })
-        }
-      })
-    
     // logout route
       fastify.route({
         method: [ 'POST', 'HEAD' ],

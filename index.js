@@ -34,7 +34,7 @@ app.decorate('upload', upload)
 //Register routes
 app.register(multer.contentParser)
 app.register(db, { uri })
-app.register(profilesRoutes, { prefix: '/api/profiles' })
+app.register(profilesRoutes, { prefix: '/api/profile' })
 app.register(usersRoutes, { prefix: '/api' })
 app.register(petsRoutes, { prefix: '/api/pets' })
 app.register(healthCardsRoutes, { prefix: '/api/health-cards' })
