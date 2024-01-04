@@ -66,11 +66,59 @@ export async function logout(req, reply) {
 export async function changePassword(req, reply) {
   try {
     const user = await User.findOne({ username: req.body.username })
-
+    if (!user) throw new Error('User not found')
+    
     user.password = req.body.newPassword
     await user.save()
   
     reply.send({ status: 'Your password has been changed', user: req.user })
+  } catch (error) {
+    console.log(error)
+    reply.status(500).send(error)
+  }
+}
+
+export async function updateUser(req, reply) {
+  try {
+    const user = await User.findOne({ username: req.body.username })
+    if (!user) throw new Error('User not found')
+
+    user.username = req.body.newUsername
+    user.password = req.body.newPassword
+
+    await user.save()
+    reply.send({ status: 'Your account has been changed', user: req.user })
+  } catch (error) {
+    console.log(error)
+    reply.status(500).send(error)
+  }
+}
+
+export async function deleteUser(req, reply) {
+  try {
+    const user = await User.findOne({ username: req.body.username })
+    if (!user) throw new Error('User not found')
+
+    if (req.body.password !== req.user.password) {
+      throw new Error('Wrong password entered. Please try again')
+    }
+
+    //delete profile
+    try {
+      const profile = await Profile.findById(req.user.profile)
+      await profile.deleteOne()
+    } catch (error) {
+      console.log(`Error occurred while deleting profile: ${error}`)
+    }
+    
+    //logout ?
+    req.user.tokens = req.user.tokens.filter((token) => {
+      return token.token !== req.token
+    })
+    
+    //delete user
+    const deletedUser = await user.deleteOne()
+    reply.send({ status: 'Your account has been deleted!', user: deletedUser })
   } catch (error) {
     console.log(error)
     reply.status(500).send(error)

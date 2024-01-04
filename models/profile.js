@@ -1,4 +1,5 @@
-import mongoose from "mongoose"
+import mongoose from 'mongoose'
+import { Pet } from './pet.js'
 
 const Schema = mongoose.Schema
 
@@ -12,5 +13,21 @@ const profileSchema = new Schema({
 })
 
 const Profile = mongoose.model('Profile', profileSchema)
+
+//invoked when profile is deleted
+profileSchema.pre('deleteOne', (next) => {
+  const profileId = this.getQuery()['_id']
+  console.log('profileId', profileId)
+  //deleting pets in profile
+  Pet.deleteMany({ 'parent': profileId }, (error, res) => {
+    if (err) {
+      console.log(`Error deleting pets in profile: ${error}`)
+      next(error)
+    } else {
+      console.log('Success deleting pets in profile')
+      next()
+    }
+  })
+})
 
 export { Profile }

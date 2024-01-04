@@ -14,7 +14,6 @@ const usersRoutes = async (fastify, opts, done) => {
         logLevel: 'warn',
         handler: authCtrl.signup
       })
-    
     // login route
       fastify.route({
         method: [ 'POST', 'HEAD' ],
@@ -23,7 +22,6 @@ const usersRoutes = async (fastify, opts, done) => {
         preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),
         handler: authCtrl.login
       })
-    
     // logout route
       fastify.route({
         method: [ 'POST', 'HEAD' ],
@@ -32,16 +30,31 @@ const usersRoutes = async (fastify, opts, done) => {
         preHandler: fastify.auth([ fastify.asyncVerifyJWT ]),
         handler: authCtrl.logout
       })     
-
     //change password route
       fastify.route({
-        method: [ 'POST', 'HEAD' ],
+        method: [ 'PUT', 'HEAD' ],
         url: '/change-password',
         logLevel: 'warn',
         preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),
         handler: authCtrl.changePassword
-      })     
+      })
+    //change account route
+      fastify.route({
+        method: [ 'PUT', 'HEAD' ],
+        url: '/update-account',
+        logLevel: 'warn',
+        preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),
+        handler: authCtrl.updateUser
+      })  
+    //delete user/profile route
+      fastify.route({
+      method: [ 'DELETE', 'HEAD' ],
+      url: '/delete-account',
+      logLevel: 'warn',
+      preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),
+      handler: authCtrl.deleteUser
     })
+  })
   done()
 }
 export { usersRoutes }

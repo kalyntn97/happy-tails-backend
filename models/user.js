@@ -38,9 +38,9 @@ userSchema.statics.findByToken = async function(token) {
     let decoded
     try {
         if (!token) {
-            return new Error('Missing token header')
-        }
-        decoded = jwt.verify(token, process.env.JWT_SECRET)
+        return new Error('Missing token header')
+    }
+    decoded = jwt.verify(token, process.env.JWT_SECRET)
     } catch (error) {
         return error
     }
