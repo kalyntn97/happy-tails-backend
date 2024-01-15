@@ -5,7 +5,7 @@ const Schema = mongoose.Schema
 const trackerSchema = new Schema({
   name: { type: String },
   total: { type: Number },
-  done: { type: Number },
+  done: [{ type: Date }],
   skipped: { type: Number },
   left: { type: Number },
 }, {
@@ -13,10 +13,10 @@ const trackerSchema = new Schema({
 })
 
 const careCardSchema = new Schema({
-  pet: { type: Schema.Types.ObjectId, ref: 'Pet' , required: true },
-  name: { type: String },
-  times: { type: Number, default: 1 },
-  frequency: { type: String },
+  pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' , required: true }],
+  name: { type: String, required: true },
+  times: { type: Number, required: true },
+  frequency: { type: String, required: true },
   trackers: [trackerSchema]
 }, {
   timestamps: true

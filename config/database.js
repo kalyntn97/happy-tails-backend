@@ -1,10 +1,7 @@
 import fp from 'fastify-plugin'
 import mongoose from 'mongoose'
-import { User } from '../models/user.js'
 
-const models = { User }
-
-const ConnectDB = async (fastify, options) => {
+const ConnectDB = async (fastify, options, done) => {
   try {
     const db = await mongoose.connect(options.uri)
 
@@ -12,14 +9,17 @@ const ConnectDB = async (fastify, options) => {
       fastify.log.info({ actor: 'MongoDB' }, 'connected')
     })
 
+    db.connection.on('error', (err) => {
+      fastify.log.error({ actor: 'MongoDB' }, `connection error: ${err.message}`)
+    })
+    
     db.connection.on('disconnected', () => {
       fastify.log.error({ actor: 'MongoDB' }, 'disconnected')
     })
-
-    // Decorate fastify with your models
-    fastify.decorate('db', { models })
+    done()
   } catch (error) {
     console.error('Error connecting to MongoDB:', error)
+    done(error)
   }
 }
 

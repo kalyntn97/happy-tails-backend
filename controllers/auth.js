@@ -1,12 +1,13 @@
 import { User } from "../models/user.js"
 import { Profile } from '../models/profile.js'
+import jwt from 'jsonwebtoken'
 
 export async function signup(req, reply) {
   try {
     if (!process.env.JWT_SECRET) {
       throw new Error('no SECRET in back-end .env')
     }
-    if (!process.env.CLOUDINARY_URL) {
+    if (!process.env.CLOUD_NAME) {
       throw new Error('no CLOUDINARY_URL in back-end .env file')
     }
 
@@ -38,7 +39,7 @@ export async function login(req, reply) {
   if (!process.env.JWT_SECRET) {
     throw new Error('no SECRET in back-end .env')
   }
-  if (!process.env.CLOUD_KEY) {
+  if (!process.env.CLOUD_NAME) {
     throw new Error('no CLOUDINARY_URL in back-end .env file')
   }
   const user = await User.findOne({ username: req.body.username })
@@ -51,6 +52,7 @@ export async function login(req, reply) {
 
 export async function logout(req, reply) {
   try {
+    console.log('req.user', req.user)
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token
     })
@@ -65,13 +67,13 @@ export async function logout(req, reply) {
 
 export async function changePassword(req, reply) {
   try {
-    const user = await User.findOne({ username: req.body.username })
-    if (!user) throw new Error('User not found')
+    req.user.password = req.body.password
+
+    await req.user.save()
+
+    const token = createJWT(req.user)
     
-    user.password = req.body.newPassword
-    await user.save()
-  
-    reply.send({ status: 'Your password has been changed', user: req.user })
+    reply.send({ status: 'Your password has been changed', token: token })
   } catch (error) {
     console.log(error)
     reply.status(500).send(error)
@@ -115,7 +117,7 @@ export async function deleteUser(req, reply) {
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token
     })
-    
+
     //delete user
     const deletedUser = await user.deleteOne()
     reply.send({ status: 'Your account has been deleted!', user: deletedUser })
@@ -123,4 +125,8 @@ export async function deleteUser(req, reply) {
     console.log(error)
     reply.status(500).send(error)
   }
+}
+
+function createJWT(user) {
+  return jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '72h' })
 }

@@ -14,9 +14,7 @@ const careCardsRoutes = async (fastify, opts, done) => {
     fastify.post('/', careCardsCtrl.create)
     fastify.put('/:careCardId', careCardsCtrl.update)
     fastify.put('/:careCardId/:trackerId/check', careCardsCtrl.checkDone)
-    fastify.put('/:careCardId/:trackerId/skip', careCardsCtrl.skip)
     fastify.put('/:careCardId/:trackerId/uncheck', careCardsCtrl.uncheck)
-    fastify.put('/:careCardId/:trackerId/unskip', careCardsCtrl.unskip)
     fastify.delete('/:careCardId', careCardsCtrl.delete)
   done()
 }

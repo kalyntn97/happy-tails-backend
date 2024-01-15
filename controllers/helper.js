@@ -1,7 +1,8 @@
 export function getCurrentDate() {
-  const currentDate = new Date()
-  const currentYear = currentDate.getFullYear()
-  const currentMonth = currentDate.getMonth() + 1
+  const today = new Date()
+  const currentDate = today.getDate()
+  const currentYear = today.getFullYear()
+  const currentMonth = today.getMonth() + 1
 
   const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1)
   const lastDayOfMonth = new Date(currentYear, currentMonth, 0)

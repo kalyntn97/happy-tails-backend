@@ -28,7 +28,7 @@ const upload = multer({ storage: storage })
 
 //initialize fastify
 const app = fastify({
-  logger: true
+  logger: true,
 })
 app.decorate('upload', upload)
 //Register routes

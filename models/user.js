@@ -24,6 +24,7 @@ userSchema.pre('save', async function(next) {
     next()
 })
 
+
 userSchema.methods.generateToken = async function() {
     let user = this
     const token = jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '72h' })
@@ -38,13 +39,13 @@ userSchema.statics.findByToken = async function(token) {
     let decoded
     try {
         if (!token) {
-        return new Error('Missing token header')
-    }
-    decoded = jwt.verify(token, process.env.JWT_SECRET)
+            return new Error('Missing token header')
+        }
+        decoded = jwt.verify(token, process.env.JWT_SECRET)
+        console.log('decoded', decoded)
     } catch (error) {
         return error
     }
-    console.log(token)
     return await User.findOne({
         _id: decoded._id,
         'tokens.token': token
