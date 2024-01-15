@@ -64,8 +64,11 @@ async function update(req, reply) {
 
 async function index(req, reply) {
   try {
+    const { currentDate, daysInMonth, weeksInMonth } = getCurrentDate()
+
     const careCards = await CareCard.find()
     .populate({ path: 'pets' })
+ 
     reply.code(200).send(careCards)
   } catch (error) {
     console.log(error)
@@ -75,21 +78,9 @@ async function index(req, reply) {
 
 async function show(req, reply) {
   try {
-    const { currentDate, daysInMonth, weeksInMonth } = getCurrentDate()
     const careCard = await CareCard.findById(req.params.careCardId)
     .populate({ path: 'pets' })
     
-    createNewTracker(careCard, careCard.trackers[careCard.trackers.length - 1])
-    
-    const latestTracker = careCard.trackers[careCard.trackers.length - 1]
-    if (careCard.freq === 'daily' && latestTracker.done.length < currentDate) {
-      const skipped = currentDate - latestTracker.done.length
-      for (let i = 0; i < skipped; i++) {
-        latestTracker.done.push(0)
-      }
-    }
-
-    await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
     console.log(error)
@@ -125,6 +116,24 @@ async function uncheck(req, reply) {
     tracker.done[index] = count--
   }
   await updateTracker(req, reply, updateFunction)
+}
+
+async function autoCreateTracker(req, reply) {
+  try {
+    const careCard = await CareCard.findById(req.params.careCardId)
+    createNewTracker(careCard, careCard.trackers[careCard.trackers.length - 1])
+    const latestTracker = careCard.trackers[careCard.trackers.length - 1]
+    if (careCard.freq === 'daily' && latestTracker.done.length < currentDate) {
+      const skipped = currentDate - latestTracker.done.length
+      for (let i = 0; i < skipped; i++) {
+        latestTracker.done.push(0)
+      }
+    }
+    await careCard.save()
+    reply.code(200).send(careCard)
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 function createNewTracker(careCard, latestTracker) {
@@ -164,4 +173,5 @@ export {
   show,
   checkDone,
   uncheck,
+  autoCreateTracker
 }

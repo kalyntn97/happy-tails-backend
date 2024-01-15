@@ -13,6 +13,7 @@ const careCardsRoutes = async (fastify, opts, done) => {
     fastify.get('/', careCardsCtrl.index)     
     fastify.post('/', careCardsCtrl.create)
     fastify.put('/:careCardId', careCardsCtrl.update)
+    fastify.patch('/:careCardId/auto', careCardsCtrl.autoCreateTracker)
     fastify.put('/:careCardId/:trackerId/check', careCardsCtrl.checkDone)
     fastify.put('/:careCardId/:trackerId/uncheck', careCardsCtrl.uncheck)
     fastify.delete('/:careCardId', careCardsCtrl.delete)
