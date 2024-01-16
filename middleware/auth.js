@@ -18,6 +18,9 @@ export async function verifyJWT(req, reply) {
       throw new Error('No token was sent')
     }
     const token = req.headers.authorization.replace('Bearer ', '')
+    if (!token) {
+      throw new Error('Token is missing')
+    }
     const user = await User.findByToken(token)
     if (!user) {
       // handles logged out user with valid token
@@ -25,7 +28,7 @@ export async function verifyJWT(req, reply) {
     }
     req.user = user
     req.token = token // used in logout route
-    console.log('req.user verify', req.user)
+    // console.log('req.user verify', req.user)
   } catch (error) {
     reply.code(401).send(error)
   }

@@ -52,7 +52,7 @@ export async function login(req, reply) {
 
 export async function logout(req, reply) {
   try {
-    console.log('req.user', req.user)
+    console.log('req.user before logout', req.user)
     req.user.tokens = req.user.tokens.filter((token) => {
       return token.token !== req.token
     })

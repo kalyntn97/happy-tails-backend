@@ -42,7 +42,7 @@ userSchema.statics.findByToken = async function(token) {
             return new Error('Missing token header')
         }
         decoded = jwt.verify(token, process.env.JWT_SECRET)
-        console.log('decoded', decoded)
+        // console.log('decoded', decoded)
     } catch (error) {
         return error
     }

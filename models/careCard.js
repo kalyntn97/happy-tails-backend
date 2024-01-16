@@ -5,9 +5,7 @@ const Schema = mongoose.Schema
 const trackerSchema = new Schema({
   name: { type: String },
   total: { type: Number },
-  done: [{ type: Date }],
-  skipped: { type: Number },
-  left: { type: Number },
+  done: [{ type: Number }],
 }, {
   timestamps: true
 })
