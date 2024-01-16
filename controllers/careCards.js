@@ -14,9 +14,13 @@ async function create(req, reply) {
     // set initial total and done values
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
     newTracker.total = calTotal(times, frequency, newTracker)
-    for (let i = 0; i < newTracker.total; i++) {
+    if (frequency === 'Yearly' || frequency === 'Monthly') {
       newTracker.done.push(0)
-    }  
+    } else {
+      for (let i = 0; i < newTracker.total; i++) {
+        newTracker.done.push(0)
+      }  
+    }
 
     const careCard = await CareCard.create(req.body)
     // const pet = await Pet.findById(careCard.pet)
@@ -43,6 +47,7 @@ async function deleteCareCard(req, reply) {
 
 async function update(req, reply) {
   try {
+    console.log('data received', req.body)
     const { currentYear, currentMonth } = getCurrentDate()
     const { times, frequency } = req.body
 
@@ -54,9 +59,13 @@ async function update(req, reply) {
 
     const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
     updatedTracker.total = calTotal(times, frequency, updatedTracker)
-    for (let i = 0; i < updatedTrackerTracker.total; i++) {
-      newTracker.done.push(0)
-    }  
+    if (frequency === 'Yearly' || frequency === 'Monthly') {
+      updatedTracker.done.push(0)
+    } else {
+      for (let i = 0; i < updatedTracker.total; i++) {
+        updatedTracker.done.push(0)
+      }  
+    }
 
     updatedTracker.name = frequency === 'Yearly' ? currentYear : `${currentMonth}-${currentYear}`
 
