@@ -5,6 +5,7 @@ export function getCurrentDate() {
   const currentMonth = today.getMonth() + 1
 
   const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1)
+  const firstDay = firstDayOfMonth.getDAy()
   const lastDayOfMonth = new Date(currentYear, currentMonth, 0)
 
   const daysInMonth = lastDayOfMonth.getDate()
@@ -20,6 +21,7 @@ export function getCurrentDate() {
     daysInMonth, 
     weeksInMonth,
     daysPassed,
-    weeksPassed
+    weeksPassed,
+    firstDay
   }
 }

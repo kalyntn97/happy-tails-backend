@@ -3,13 +3,13 @@ import { getCurrentDate } from "./helper.js"
 
 async function create(req, reply) {
   try {
-    const { currentYear, currentMonth } = getCurrentDate()
+    const { currentYear, currentMonth, firstDay } = getCurrentDate()
     const { times, frequency } = req.body
     // create empty tracker
     req.body.trackers = []
     req.body.trackers.push({
       name: frequency == 'Yearly' ? currentYear : currentMonth + '-' + currentYear,
-      done: []
+      done: [],
     })
     // set initial total and done values
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
@@ -20,6 +20,9 @@ async function create(req, reply) {
       for (let i = 0; i < newTracker.total; i++) {
         newTracker.done.push(0)
       }  
+      if (frequency === 'Daily') {
+        newTracker.push({ firstDay: firstDay })
+      }
     }
 
     const careCard = await CareCard.create(req.body)
@@ -66,7 +69,10 @@ async function update(req, reply) {
     } else {
       for (let i = 0; i < updatedTracker.total; i++) {
         updatedTracker.done.push(0)
-      }  
+      }
+      if (frequency === 'Daily' && !newTracker.firstDay) {
+        newTracker.push({ firstDay: firstDay })
+      }
     }
 
     updatedTracker.name = frequency === 'Yearly' ? currentYear : `${currentMonth}-${currentYear}`
