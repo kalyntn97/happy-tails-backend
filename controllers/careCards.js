@@ -21,7 +21,7 @@ async function create(req, reply) {
         newTracker.done.push(0)
       }  
       if (frequency === 'Daily') {
-        newTracker.push({ firstDay: firstDay })
+        newTracker.firstDay = firstDay
       }
     }
 
