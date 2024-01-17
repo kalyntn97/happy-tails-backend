@@ -56,9 +56,11 @@ async function update(req, reply) {
       req.body,
       { new: true }
     )
-
+    // get the latest tracker
     const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
+    // reset the tracker field
     updatedTracker.total = calTotal(times, frequency, updatedTracker)
+    updatedTracker.done = []
     if (frequency === 'Yearly' || frequency === 'Monthly') {
       updatedTracker.done.push(0)
     } else {

@@ -7,7 +7,9 @@ import { v2 as cloudinary } from 'cloudinary'
 
 async function index(req, reply) {
   try {
-    const pets = await Pet.find()
+    const profile = await Profile.findById(req.user.profile)
+    .populate({ path: 'pets'})
+    const pets = profile.pets
     reply.code(200).send(pets)
   } catch (error) {
     console.log(error)
