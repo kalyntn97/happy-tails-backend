@@ -8,13 +8,13 @@ async function create(req, reply) {
     // create empty tracker
     req.body.trackers = []
     req.body.trackers.push({
-      name: frequency == 'Yearly' ? currentYear : currentMonth + '-' + currentYear,
+      name: frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : currentMonth + '-' + currentYear,
       done: [],
     })
     // set initial total and done values
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
     newTracker.total = calTotal(times, frequency, newTracker)
-    if (frequency === 'Yearly' || frequency === 'Monthly') {
+    if (frequency === 'Yearly') {
       newTracker.done.push(0)
     } else {
       for (let i = 0; i < newTracker.total; i++) {
@@ -64,18 +64,18 @@ async function update(req, reply) {
     // reset the tracker field
     updatedTracker.total = calTotal(times, frequency, updatedTracker)
     updatedTracker.done = []
-    if (frequency === 'Yearly' || frequency === 'Monthly') {
+    if (frequency === 'Yearly') {
       updatedTracker.done.push(0)
     } else {
       for (let i = 0; i < updatedTracker.total; i++) {
         updatedTracker.done.push(0)
       }
       if (frequency === 'Daily' && !newTracker.firstDay) {
-        newTracker.push({ firstDay: firstDay })
+        newTracker.firstDay = firstDay
       }
     }
 
-    updatedTracker.name = frequency === 'Yearly' ? currentYear : `${currentMonth}-${currentYear}`
+    updatedTracker.name = frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : `${currentMonth}-${currentYear}`
 
     await careCard.save()
     reply.code(200).send(careCard)
@@ -114,14 +114,11 @@ async function checkDone(req, reply) {
   console.log(`Days passed: ${daysPassed}, Weeks passed: ${weeksPassed}`)
   console.log('idx main func', req.body.index)
   const updateFunction = (tracker, frequency, index) => {
-    // index is currentDate for Daily Tracker
-    if (frequency === 'Daily') {
+    // index is current field
+    if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
       tracker.done[index]++
-    // index is currentWeek (weekPassed + 1, array index starts at 0)
-    } else if (frequency === 'Weekly') {
-      tracker.done[weeksPassed]++
-    // Monthly and Yearly tracker only contain 1 count
-    } else if (frequency === 'Monthly' || frequency === 'Yearly') {
+    // Yearly tracker only contain 1 count
+    } else if (frequency === 'Yearly') {
       tracker.done[0]++
     }
     return tracker
@@ -132,11 +129,11 @@ async function checkDone(req, reply) {
 async function uncheck(req, reply) {
   const { daysPassed, weeksPassed } = getCurrentDate()
   const updateFunction = (tracker, frequency, index) => {
-    if (frequency === 'Daily') {
+    // index is current field
+    if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
       tracker.done[index]--
-    } else if (frequency === 'Weekly') {
-      tracker.done[weeksPassed]--
-    } else if (frequency === 'Monthly' || frequency === 'Yearly') {
+    // Yearly tracker only contain 1 count
+    } else if (frequency === 'Yearly') {
       tracker.done[0]--
     }
     return tracker
@@ -184,8 +181,14 @@ function createNewTracker(frequency, latestTracker) {
   const isNewYear = currentYear != latestTracker.name.slice(-4)
   const isNewMonth = currentMonth != latestTracker.name.split('-')[0]
   console.log(`isNewYear: ${isNewYear}, isNewMonth: ${isNewMonth}`)
+  if (( 
+      (frequency === 'Yearly' || frequency === 'Monthly') 
+      && isNewYear 
+    ) || ( 
+      (frequency !== 'Yearly' || frequency !== 'Monthly') 
+      && isNewMonth 
+  )) {
   // create new tracker based on frequency
-  if ((frequency === 'Yearly' && isNewYear) || (frequency !== 'Yearly' && isNewMonth)) {
     const newTracker = {
       name: frequency === 'Yearly' ? currentYear : `${currentMonth}-${currentYear}`,
       total: latestTracker.total,
@@ -207,7 +210,9 @@ function calTotal(times, freq, tracker) {
     tracker.total = daysInMonth
   } else if (freq === 'Weekly') {
     tracker.total = weeksInMonth
-  } else if (freq === 'Monthly' || freq === 'Yearly') {
+  } else if (freq === 'Monthly') {
+    tracker.total = 12
+  } else if (freq === 'Yearly') {
     tracker.total = times
   }
   return tracker.total

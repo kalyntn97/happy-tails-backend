@@ -5,7 +5,10 @@ export function getCurrentDate() {
   const currentMonth = today.getMonth() + 1
 
   const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1)
+
   const firstDay = firstDayOfMonth.getDay()
+  console.log(firstDay)
+  
   const lastDayOfMonth = new Date(currentYear, currentMonth, 0)
 
   const daysInMonth = lastDayOfMonth.getDate()

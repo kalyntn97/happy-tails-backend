@@ -6,6 +6,7 @@ const trackerSchema = new Schema({
   name: { type: String },
   total: { type: Number },
   done: [{ type: Number }],
+  firstDay: { type: Number }
 }, {
   timestamps: true
 })
