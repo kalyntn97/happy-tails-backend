@@ -14,13 +14,15 @@ export function getCurrentDate() {
   const daysInMonth = lastDayOfMonth.getDate()
   const weeksInMonth = Math.ceil((daysInMonth + firstDayOfMonth.getDay()) / 7)
 
-  const daysPassed = daysInMonth - currentDate
-  const weeksPassed = Math.floor((daysInMonth - currentDate) / 7)
+  const daysPassed = currentDate - 1  
+  const weeksPassed = Math.floor((daysPassed + firstDayOfMonth.getDay()) / 7)
+  const currentWeek = weeksPassed + 1
 
   return {
     currentDate,
     currentYear,
     currentMonth,
+    currentWeek,
     daysInMonth, 
     weeksInMonth,
     daysPassed,

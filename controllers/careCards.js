@@ -70,8 +70,8 @@ async function update(req, reply) {
       for (let i = 0; i < updatedTracker.total; i++) {
         updatedTracker.done.push(0)
       }
-      if (frequency === 'Daily' && !newTracker.firstDay) {
-        newTracker.firstDay = firstDay
+      if (frequency === 'Daily' && !updatedTracker.firstDay) {
+        updatedTracker.firstDay = firstDay
       }
     }
 
