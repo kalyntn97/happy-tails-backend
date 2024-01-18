@@ -160,47 +160,33 @@ async function updateTracker(req, reply, updateFunction) {
 async function autoCreateTracker(req, reply) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
-    // check if a new tracker should be created for new month/ new year
-    const newTracker = createNewTracker(careCard.frequency, careCard.trackers[careCard.trackers.length - 1])
-    if (newTracker) {
-      careCard.trackers.push(newTracker)
-      await careCard.save()
-      reply.code(200).send(careCard)
-    } else {
-      reply.code(200).send('Up to date. No new tracker created')
-    }
-  } catch (error) {
-    console.log(error)
-  }
-}
 
-function createNewTracker(frequency, latestTracker) {
-  const { currentYear, currentMonth } = getCurrentDate()
-  console.log(`LT year ${latestTracker.name.slice(-4)}, LT month ${latestTracker.name.split('-')[0]}`)
-  // check if new month or new year
-  const isNewYear = currentYear != latestTracker.name.slice(-4)
-  const isNewMonth = currentMonth != latestTracker.name.split('-')[0]
-  console.log(`isNewYear: ${isNewYear}, isNewMonth: ${isNewMonth}`)
-  if (( 
-      (frequency === 'Yearly' || frequency === 'Monthly') 
-      && isNewYear 
-    ) || ( 
-      (frequency !== 'Yearly' || frequency !== 'Monthly') 
-      && isNewMonth 
-  )) {
-  // create new tracker based on frequency
+    const { currentYear, currentMonth, firstDay } = getCurrentDate()
+    const frequency = careCard.frequency
+    const latestTracker = careCard.trackers[careCard.trackers.length - 1]
+
+    //create new tracker
     const newTracker = {
-      name: frequency === 'Yearly' ? currentYear : `${currentMonth}-${currentYear}`,
-      total: latestTracker.total,
+      name: frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : `${currentMonth}-${currentYear}`,
+      total: latestTracker.total, //same tracker rollover
       done: []
     }
-    for (let i = 0; i < newTracker.total; i++) {
+    if (frequency === 'Yearly') {
       newTracker.done.push(0)
+    } else {
+      for (let i = 0; i < newTracker.total; i++) {
+        newTracker.done.push(0)
+      }
+      if (frequency === 'Daily' && !newTracker.firstDay) {
+        newTracker.firstDay = firstDay
+      }
     }
-    return newTracker
-  // no tracker created
-  } else {
-    return null
+    careCard.trackers.push(newTracker)
+    await careCard.save()
+
+    reply.code(200).send(careCard)
+  } catch (error) {
+    console.log(error)
   }
 }
 
