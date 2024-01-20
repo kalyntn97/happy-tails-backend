@@ -1,4 +1,5 @@
 import { CareCard } from "../models/careCard.js"
+import { Profile } from "../models/profile.js"
 import { getCurrentDate } from "./helper.js"
 
 async function create(req, reply) {
@@ -26,11 +27,9 @@ async function create(req, reply) {
     }
 
     const careCard = await CareCard.create(req.body)
-    // const pet = await Pet.findById(careCard.pet)
-    // const newCareCard = await CareCard.findById(careCard._id)
-    // .populate({ path: 'pet' })
-    // pet.careCards.push(newCareCard._id)
-    // await pet.save()
+    const profile = await Profile.findById(req.user.profile)
+    profile.careCards.push(careCard._id)
+    await profile.save()
     reply.code(201).send(careCard)
   } catch (error) {
     console.log(error)
@@ -46,7 +45,7 @@ async function deleteCareCard(req, reply) {
     console.log(error)
     reply.code(500).send(error)
   }
-}
+} 
 
 async function update(req, reply) {
   try {
@@ -212,5 +211,5 @@ export {
   show,
   checkDone,
   uncheck,
-  autoCreateTracker
+  autoCreateTracker,
 }

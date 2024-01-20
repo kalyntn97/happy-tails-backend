@@ -4,7 +4,15 @@ import { uploadImage } from "./pets.js"
 export async function show(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-    .populate({ path: 'pets'})
+    .populate([
+      { path: 'pets'},
+      { path: 'careCards', 
+        populate: {
+          path: 'trackers', 
+          options: { sort: { createdAt: -1 }, limit: 1 }
+        }
+      }
+    ])
     reply.code(200).send(profile)
   } catch (error) {
     console.log(error)
