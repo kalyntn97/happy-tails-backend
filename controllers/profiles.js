@@ -6,12 +6,12 @@ export async function show(req, reply) {
     const profile = await Profile.findById(req.user.profile)
     .populate([
       { path: 'pets'},
-      { path: 'careCards', 
-        populate: {
-          path: 'trackers', 
-          options: { sort: { createdAt: -1 }, limit: 1 }
-        }
-      }
+      // { path: 'careCards', 
+      //   populate: {
+      //     path: 'trackers', 
+      //     options: { sort: { createdAt: -1 }, limit: 1 }
+      //   }
+      // }
     ])
     reply.code(200).send(profile)
   } catch (error) {

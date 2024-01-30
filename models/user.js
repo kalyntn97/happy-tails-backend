@@ -17,7 +17,7 @@ const userSchema = new Schema({
 // encrypt password using bcrypt conditionally only if the user is newly created.
 // hash the plain text password before saving
 userSchema.pre('save', async function(next) {
-    const user = this;
+    const user = this
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8)
     }
