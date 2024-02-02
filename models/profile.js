@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { Pet } from './pet.js'
+import { CareCard } from './careCard.js'
 
 const Schema = mongoose.Schema
 
@@ -16,19 +17,15 @@ const profileSchema = new Schema({
 const Profile = mongoose.model('Profile', profileSchema)
 
 //invoked when profile is deleted
-profileSchema.pre('deleteOne', (next) => {
-  const profileId = this.getQuery()['_id']
-  console.log('profileId', profileId)
-  //deleting pets in profile
-  Pet.deleteMany({ 'parent': profileId }, (error, res) => {
-    if (err) {
-      console.log(`Error deleting pets in profile: ${error}`)
-      next(error)
-    } else {
-      console.log('Success deleting pets in profile')
-      next()
-    }
-  })
+profileSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+  try {
+    const profile = this
+    await Pet.deleteMany({ 'parent': profile._id })
+    await CareCard.deleteMany({ '_id': { $in: profile.careCards } })
+    return next()
+  } catch (error) {
+    return next(error)
+  }
 })
 
 export { Profile }

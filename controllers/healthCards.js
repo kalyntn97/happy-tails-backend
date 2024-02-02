@@ -20,7 +20,7 @@ async function index(req, reply) {
     ])
     reply.code(200).send(healthCards)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -35,7 +35,7 @@ async function index(req, reply) {
 //     await pet.save()
 //     reply.code(200).send(newHealthCard)
 //   } catch (error) {
-//     console.log(error)
+//     console.error(error)
 //     reply.code(500).send(error)
 //   }
 // }
@@ -47,7 +47,7 @@ async function show(req, reply) {
     const vetCards = healthCard.vetCards
     reply.code(200).send(healthCard)    
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -77,7 +77,7 @@ async function addVetCard(req, reply) {
     await newVetCard.save()
     reply.code(201).send(newVetCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -99,7 +99,7 @@ function calDueDate(freq, times, dueDate) {
 //     const healthCard = await HealthCard.findByIdAndDelete(req.params.healthCardId)
 //     reply.code(200).send(healthCard)
 //   } catch {
-//     console.log(error)
+//     console.error(error)
 //     reply.code(500).send(error)
 //   }
 // }
@@ -112,7 +112,7 @@ async function deleteVetCard(req, reply) {
     await healthCard.save()
     reply.code(200).send(vetCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -138,7 +138,7 @@ async function updateVetCard(req, reply) {
     await healthCard.save()
     reply.code(200).send(vetCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -158,7 +158,7 @@ async function checkDone(req, reply) {
     await healthCard.save()
     reply.code(200).send(vetCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }

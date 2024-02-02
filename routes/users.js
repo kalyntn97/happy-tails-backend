@@ -31,7 +31,13 @@ const usersRoutes = async (fastify, opts, done) => {
         handler: authCtrl.logout
       })     
     //change password route
-      fastify.put('/change-password', { preHandler: fastify.auth([ fastify.asyncVerifyJWT ]) }, authCtrl.changePassword)
+      fastify.route({
+        method: [ 'PATCH', 'HEAD' ],
+        url: '/change-password',
+        logLevel: 'warn',
+        preHandler: fastify.auth([ fastify.asyncVerifyJWT ]),
+        handler: authCtrl.changePassword
+      })  
     //change account route
       fastify.route({
         method: [ 'PUT', 'HEAD' ],

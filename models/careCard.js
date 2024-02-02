@@ -22,7 +22,7 @@ const careCardSchema = new Schema({
   timestamps: true
 })
 
-careCardSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+careCardSchema.pre(['deleteOne', 'deleteMany'], { document: true, query: false }, async function (next) {
   try {
     const careCard = this
     await Profile.updateOne({ careCards: careCard._id }, { $pull: { careCards: careCard._id } })

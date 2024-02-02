@@ -15,7 +15,7 @@ export async function show(req, reply) {
     ])
     reply.code(200).send(profile)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send({ error: error.message })
   }
 }
@@ -29,7 +29,7 @@ export async function update(req, reply) {
     ).populate({path: 'pets'})
     reply.code(200).send(profile)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send({ error: error.message })
   }
 }
@@ -45,7 +45,7 @@ export async function addPhoto(req, reply) {
     await profile.save()
     reply.code(200).send({message: 'Success', url: result})
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send({message: 'Upload failed', error: error})
   }
 }

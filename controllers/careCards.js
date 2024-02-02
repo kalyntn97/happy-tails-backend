@@ -34,7 +34,7 @@ async function create(req, reply) {
     const newCareCard = await CareCard.findById(careCard._id).populate({ path: 'pets' })
     reply.code(201).send(newCareCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -45,7 +45,7 @@ async function deleteCareCard(req, reply) {
     await careCard.deleteOne()
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 } 
@@ -82,7 +82,7 @@ async function update(req, reply) {
     await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -101,7 +101,7 @@ async function index(req, reply) {
     const careCards = profile.careCards
     reply.code(200).send(careCards)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -113,7 +113,7 @@ async function show(req, reply) {
     
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -161,7 +161,7 @@ async function updateTracker(req, reply, updateFunction) {
     await careCard.save()
     reply.code(200).send(tracker)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -195,7 +195,7 @@ async function autoCreateTracker(req, reply) {
 
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
   }
 }
 
