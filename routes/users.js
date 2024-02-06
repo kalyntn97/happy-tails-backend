@@ -40,11 +40,11 @@ const usersRoutes = async (fastify, opts, done) => {
       })  
     //change account route
       fastify.route({
-        method: [ 'PUT', 'HEAD' ],
-        url: '/update-account',
+        method: [ 'PATCH', 'HEAD' ],
+        url: '/change-username',
         logLevel: 'warn',
         preHandler: fastify.auth([ fastify.asyncVerifyJWT ]),
-        handler: authCtrl.updateUser
+        handler: authCtrl.changeUsername
       })  
     //delete user/profile route
       fastify.route({

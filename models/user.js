@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { Profile } from './profile.js'
 
 const Schema = mongoose.Schema
 
@@ -23,7 +24,16 @@ userSchema.pre('save', async function(next) {
 	}
 	next()
 })
-
+// delete profile if user is deleted
+userSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+	try {
+		const user = this
+		await Profile.deleteOne({ '_id': user.profile })
+		return next()
+	} catch (error) {
+		return next(error)
+	}
+})
 
 userSchema.methods.generateToken = async function() {
 	let user = this
@@ -31,6 +41,15 @@ userSchema.methods.generateToken = async function() {
 	user.token = token
 	await user.save()
 	return token
+}
+
+userSchema.methods.comparePasswords = async function(passwordToCompare) {
+	let user = this
+	const isMatch = await bcrypt.compare(passwordToCompare, user.password)
+	if (!isMatch) {
+		throw new Error('Passwords do not match.')
+	}
+	return isMatch
 }
 
 // create a custom model method to find user by token for authentication
