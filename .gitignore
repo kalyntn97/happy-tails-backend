@@ -1,0 +1,8 @@
+node_modules
+# env local
+.env
+.env*.local
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*

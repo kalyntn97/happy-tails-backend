@@ -1,6 +1,7 @@
 import { User } from "../models/user.js"
 import { Profile } from '../models/profile.js'
 import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 
 export async function signup(req, reply) {
   try {
@@ -22,13 +23,13 @@ export async function signup(req, reply) {
 
     reply.code(201).send({ newUser })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     try {
       if (req.body.profile) {
         await Profile.findByIdAndDelete(req.body.profile)
       }
     } catch (error) {
-      console.log(error)
+      console.error(error)
       return reply.code(500).send({ error: error.message })
     }
     reply.code(500).send({ error: error.message })
@@ -36,97 +37,87 @@ export async function signup(req, reply) {
 }
 
 export async function login(req, reply) {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('no SECRET in back-end .env')
+  try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('no SECRET in back-end .env')
+    }
+    if (!process.env.CLOUD_NAME) {
+      throw new Error('no CLOUDINARY_URL in back-end .env file')
+    }
+    if (!req.user) {
+      throw new Error ('Unable to login. Authentication failed!')
+    }
+    const token = await req.user.generateToken()
+    reply.send({ status: 'You are logged in', token })
+  } catch (error) {
+    console.error(error)
+    reply.status(500).send(error)
   }
-  if (!process.env.CLOUD_NAME) {
-    throw new Error('no CLOUDINARY_URL in back-end .env file')
-  }
-  const user = await User.findOne({ username: req.body.username })
-
-  if (!user) throw new Error('User not found')
-
-  const token = await req.user.generateToken()
-  reply.send({ status: 'You are logged in', token })
 }
 
 export async function logout(req, reply) {
   try {
-    console.log('req.user before logout', req.user)
-    req.user.tokens = req.user.tokens.filter((token) => {
-      return token.token !== req.token
-    })
-
-    const loggedOutUser = await req.user.save()
-    reply.send({ status: 'You are logged out!', user: loggedOutUser })
+    if (!req.user) {
+      throw new Error('Unable to logout. Authentication failed!')
+    }
+    req.user.token = ''
+    await req.user.save()
+    reply.send({ status: 'You are logged out!' })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.status(500).send(error)
   }
 }
 
 export async function changePassword(req, reply) {
   try {
-    req.user.password = req.body.password
+    if (!req.user) {
+      throw new Error('Unable to change password. Authentication failed!')
+    }
+    if (req.user.username !== req.body.username) {
+      throw new Error('Unable to confirm username.')
+    }
+    req.user.password = req.body.newPassword
 
     await req.user.save()
-
-    const token = createJWT(req.user)
-    
-    reply.send({ status: 'Your password has been changed', token: token })
+ 
+    reply.send({ status: 'Your password has been changed' })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.status(500).send(error)
   }
 }
 
-export async function updateUser(req, reply) {
+export async function changeUsername(req, reply) {
   try {
-    const user = await User.findOne({ username: req.body.username })
-    if (!user) throw new Error('User not found')
+    if (!req.user) {
+      throw new Error('Unable to update account. Authentication failed!')
+    }
+    const isMatch = await req.user.comparePasswords(req.body.password)
+    if (!isMatch) {
+      throw new Error('Unable to confirm password')
+    }
+    req.user.username = req.body.newUsername
 
-    user.username = req.body.newUsername
-    user.password = req.body.newPassword
-
-    await user.save()
+    await req.user.save()
     reply.send({ status: 'Your account has been changed', user: req.user })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.status(500).send(error)
   }
 }
 
 export async function deleteUser(req, reply) {
   try {
-    const user = await User.findOne({ username: req.body.username })
-    if (!user) throw new Error('User not found')
-
-    if (req.body.password !== req.user.password) {
-      throw new Error('Wrong password entered. Please try again')
+    if (!req.user) {
+      throw new Error ('Authentication failed!')
     }
-
-    //delete profile
-    try {
-      const profile = await Profile.findById(req.user.profile)
-      await profile.deleteOne()
-    } catch (error) {
-      console.log(`Error occurred while deleting profile: ${error}`)
-    }
-    
-    //logout ?
-    req.user.tokens = req.user.tokens.filter((token) => {
-      return token.token !== req.token
-    })
-
+    const deletedUser = req.user
     //delete user
-    const deletedUser = await user.deleteOne()
+    await req.user.deleteOne()
     reply.send({ status: 'Your account has been deleted!', user: deletedUser })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.status(500).send(error)
   }
-}
-
-function createJWT(user) {
-  return jwt.sign({ _id: user._id.toString() }, process.env.JWT_SECRET, { expiresIn: '72h' })
 }

@@ -25,24 +25,27 @@ async function create(req, reply) {
         newTracker.firstDay = firstDay
       }
     }
-
+    // create new CareCard and save to profile
     const careCard = await CareCard.create(req.body)
     const profile = await Profile.findById(req.user.profile)
     profile.careCards.push(careCard._id)
     await profile.save()
-    reply.code(201).send(careCard)
+    // send back careCard with populated pets
+    const newCareCard = await CareCard.findById(careCard._id).populate({ path: 'pets' })
+    reply.code(201).send(newCareCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
 
 async function deleteCareCard(req, reply) {
   try {
-    const careCard = await CareCard.findByIdAndDelete(req.params.careCardId)
+    const careCard = await CareCard.findById(req.params.careCardId)
+    await careCard.deleteOne()
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 } 
@@ -79,19 +82,26 @@ async function update(req, reply) {
     await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
 
 async function index(req, reply) {
   try {
-    const careCards = await CareCard.find()
-    .populate({ path: 'pets' })
- 
+    const profile = await Profile.findById(req.user.profile)
+    .populate([
+      { path: 'careCards',
+        populate: [
+          { path: 'trackers' },
+          { path: 'pets' },
+        ]
+      }
+    ])
+    const careCards = profile.careCards
     reply.code(200).send(careCards)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -103,7 +113,7 @@ async function show(req, reply) {
     
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -151,7 +161,7 @@ async function updateTracker(req, reply, updateFunction) {
     await careCard.save()
     reply.code(200).send(tracker)
   } catch (error) {
-    console.log(error)
+    console.error(error)
     reply.code(500).send(error)
   }
 }
@@ -185,7 +195,7 @@ async function autoCreateTracker(req, reply) {
 
     reply.code(200).send(careCard)
   } catch (error) {
-    console.log(error)
+    console.error(error)
   }
 }
 
