@@ -109,7 +109,7 @@ export async function changeUsername(req, reply) {
 
 export async function deleteUser(req, reply) {
   try {
-    if (!req.token) {
+    if (!req.user) {
       throw new Error ('Authentication failed!')
     }
     const deletedUser = req.user

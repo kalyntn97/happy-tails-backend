@@ -48,7 +48,7 @@ const usersRoutes = async (fastify, opts, done) => {
       })  
     //delete user/profile route
       fastify.route({
-      method: [ 'DELETE', 'HEAD' ],
+      method: [ 'POST', 'HEAD' ],
       url: '/delete-account',
       logLevel: 'warn',
       preHandler: fastify.auth([ fastify.asyncVerifyUsernameAndPassword ]),

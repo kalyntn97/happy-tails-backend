@@ -20,7 +20,7 @@ petSchema.pre(['deleteOne', 'deleteMany'], { document: true, query: false }, asy
   try {
     const pet = this
     await Profile.updateOne({ pets: pet._id }, { $pull: { pets: pet._id } })
-    await HealthCard.deleteOne({ '_id': pet._id })
+    await HealthCard.deleteOne({ '_id': pet.healthCard })
     return next()
   } catch (error) {
     return next(error)
