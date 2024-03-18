@@ -13,10 +13,14 @@ const trackerSchema = new Schema({
 })
 
 const careCardSchema = new Schema({
-  pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' , required: true }],
   name: { type: String, required: true },
-  times: { type: Number, required: true },
-  frequency: { type: String, required: true },
+  pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' , required: true }],
+  repeat: { type: Boolean, required: true },
+  ending: { type: Boolean, required: true },
+  date: { type: Date, required: true },
+  endDate: { type: Date },
+  frequency: { type: String },
+  times: { type: Number },
   trackers: [trackerSchema]
 }, {
   timestamps: true

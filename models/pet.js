@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { Profile } from './profile.js'
-import { HealthCard } from './healthCard.js'
+import { HealthCard } from './HealthCard.js'
+import { CareCard } from './careCard.js'
 
 const Schema = mongoose.Schema
 const petSchema = new Schema({
@@ -10,8 +11,7 @@ const petSchema = new Schema({
   species: { type: String },
   breed: { type: String },
   photo: { type: String },
-  healthCard: { type: Schema.Types.ObjectId, ref: 'HealthCard' },
-  // careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
+  healthCards: [{ type: Schema.Types.ObjectId, ref: 'healthCard' }],
 }, {
   timestamps: true
 })
@@ -20,7 +20,8 @@ petSchema.pre(['deleteOne', 'deleteMany'], { document: true, query: false }, asy
   try {
     const pet = this
     await Profile.updateOne({ pets: pet._id }, { $pull: { pets: pet._id } })
-    await HealthCard.deleteOne({ '_id': pet.healthCard })
+    await HealthCard.deleteMany({ pet: pet._id })
+    await CareCard.updateMany({ pets: pet._id }, { $pull: { pets: pet._id } })
     return next()
   } catch (error) {
     return next(error)

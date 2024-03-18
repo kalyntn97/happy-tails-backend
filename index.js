@@ -37,8 +37,8 @@ app.register(db, { uri })
 app.register(profilesRoutes, { prefix: '/api/profile' })
 app.register(usersRoutes, { prefix: '/api' })
 app.register(petsRoutes, { prefix: '/api/pets' })
-app.register(healthCardsRoutes, { prefix: '/api/health-cards' })
-app.register(careCardsRoutes, { prefix: '/api/care-cards' })
+app.register(healthCardsRoutes, { prefix: '/api/health' })
+app.register(careCardsRoutes, { prefix: '/api/care' })
 
 //handle root route
 app.get('/', async function handler (req, reply) {

@@ -19,9 +19,9 @@ export async function signup(req, reply) {
     req.body.profile = newProfile._id
 
     const newUser = await User.create(req.body)
-    await newUser.generateToken()
+    const token = await newUser.generateToken()
 
-    reply.code(201).send({ newUser })
+    reply.code(201).send({ status: 'Account successfully created!', token })
   } catch (error) {
     console.error(error)
     try {
@@ -30,9 +30,9 @@ export async function signup(req, reply) {
       }
     } catch (error) {
       console.error(error)
-      return reply.code(500).send({ error: error.message })
+      return reply.code(500).send(error)
     }
-    reply.code(500).send({ error: error.message })
+    reply.code(500).send(error)
   }
 }
 
@@ -115,7 +115,7 @@ export async function deleteUser(req, reply) {
     const deletedUser = req.user
     //delete user
     await req.user.deleteOne()
-    reply.send({ status: 'Your account has been deleted!', user: deletedUser })
+    reply.send({ status: 'Your account has been deleted!' })
   } catch (error) {
     console.error(error)
     reply.status(500).send(error)

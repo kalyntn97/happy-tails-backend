@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 import { Pet } from './pet.js'
 import { CareCard } from './careCard.js'
+import { HealthCard } from './HealthCard.js'
 
 const Schema = mongoose.Schema
 
@@ -9,7 +10,8 @@ const profileSchema = new Schema({
   photo: { type: String },
   bio: { type: String },
   pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' }],
-  careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }]
+  careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
+  healthCards: [{ type: Schema.Types.ObjectId, ref: 'HealthCard' }],
 }, {
   timestamps: true
 })

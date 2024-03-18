@@ -1,23 +1,26 @@
-import { HealthCard } from "../models/healthCard.js"
-import { getCurrentDate } from "./helper.js"
+import { Pet } from "../models/pet.js"
+import { HealthCard } from "../models/HealthCard.js"
+import { Profile } from "../models/profile.js"
 
 async function index(req, reply) {
   try {
-    // array. method
-    // const healthCards = await HealthCard.find().populate({ path: 'pet' })
-    // const filteredHealthCards = healthCards.filter(card => card.pet.parent.equals(req.user.profile))
-    // console.log(filteredHealthCards)
-    // reply.code(200).send(filteredHealthCards)
     // mongoDB method
-    const healthCards = await HealthCard.aggregate([
-      { 
-        $lookup: { from: 'pets', localField: 'pet', foreignField: '_id', as: 'pet' }
-      }, { 
-        $unwind: '$pet' 
-      }, {
-        $match: { 'pet.parent': req.user.profile }
-      },
-    ])
+    // const healthCards = await HealthCard.aggregate([
+    //   { 
+    //     $lookup: { from: 'pets', localField: 'pet', foreignField: '_id', as: 'pet' }
+    //   }, { 
+    //     $unwind: '$pet' 
+    //   }, {
+    //     $match: { 'pet.parent': req.user.profile }
+    //   },
+    // ])
+    const profile = await Profile(req.user.profile)
+    .populate(
+      { path: 'healthCards',
+        populate: { path: 'pet' }
+      }
+    )
+    const healthCards = profile.healthCards
     reply.code(200).send(healthCards)
   } catch (error) {
     console.error(error)
@@ -25,26 +28,36 @@ async function index(req, reply) {
   }
 }
 
-// async function create(req, reply) {
-//   try {
-//     const healthCard = await HealthCard.create(req.body)
-//     const pet = await Pet.findById(healthCard.pet)
-//     const newHealthCard = await HealthCard.findById(healthCard._id)
-//     .populate({ path: 'pet' })
-//     pet.healthCard = newHealthCard._id
-//     await pet.save()
-//     reply.code(200).send(newHealthCard)
-//   } catch (error) {
-//     console.error(error)
-//     reply.code(500).send(error)
-//   }
-// }
+async function create(req, reply) {
+  try {
+    req.body.isVaccine = !!req.body.isVaccine
+    const healthCard = await HealthCard.create(req.body)
+    if (healthCard.lastDone && !healthCard.nextDue) {
+      const freq = healthCard.frequency
+      const times = healthCard.times
+      const dueDate = new Date(healthCard.lastDone)
+      
+      calDueDate(freq, times, dueDate)
+
+      healthCard.nextDue = dueDate
+    } else if (!healthCard.lastDone) {
+      healthCard.nextDue = new Date()
+    }
+    await HealthCard.save()
+    const pet = await Pet.findById(healthCard.pet)
+    pet.healthCards.push(healthCard._id)
+    await pet.save()
+    reply.code(200).send(healthCard)
+  } catch (error) {
+    console.error(error)
+    reply.code(500).send(error)
+  }
+}
 
 async function show(req, reply) {
   try {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
     .populate({ path: 'pet'})
-    const vetCards = healthCard.vetCards
     reply.code(200).send(healthCard)    
   } catch (error) {
     console.error(error)
@@ -52,30 +65,63 @@ async function show(req, reply) {
   }
 }
 
-async function addVetCard(req, reply) {
+async function deleteHealthCard(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    await HealthCard.deleteOne()
+    reply.code(200).send(healthCard)
+  } catch {
+    console.error(error)
+    reply.code(500).send(error)
+  }
+}
+
+async function update(req, reply) {
   try {
     req.body.isVaccine = !!req.body.isVaccine
     const healthCard = await HealthCard.findByIdAndUpdate(
       req.params.healthCardId,
-      {$push: {vetCards: req.body}},
-      {new: true}
-    )
-    const newVetCard = healthCard.vetCards[healthCard.vetCards.length - 1]
+      req.body,
+      { new: true }
+    ).populate({ path: 'Pet' })
 
-    if (newVetCard.lastDone) {
-      const freq = newVetCard.frequency
-      const times = newVetCard.times
-      const dueDate = new Date(newVetCard.lastDone)
+    if (healthCard.lastDone && !healthCard.nextDue) {
+      const freq = healthCard.frequency
+      const times = healthCard.times
+      const dueDate = new Date(healthCard.lastDone)
       
       calDueDate(freq, times, dueDate)
 
-      newVetCard.nextDue = dueDate
-    } else {
-      newVetCard.nextDue = new Date()
+      healthCard.nextDue = dueDate
+    } else if (!healthCard.lastDone) {
+      healthCard.nextDue = new Date()
     }
-    // maybe add pet info
-    await newVetCard.save()
-    reply.code(201).send(newVetCard)
+    await HealthCard.save()
+    const pet = await Pet.findById(healthCard.pet)
+    pet.healthCards.map(v => v._id === healthCard._id ? healthCard : v)
+    await pet.save()
+
+    reply.code(200).send(healthCard)
+  } catch (error) {
+    console.error(error)
+    reply.code(500).send(error)
+  }
+}
+
+async function checkDone(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+
+    healthCard.lastDone.push(req.body.done)
+    if (!req.body.nextDue) {
+      const freq = healthCard.frequency
+      const times = healthCard.times
+      const dueDate = new Date(healthCard.lastDone)
+      calDueDate(freq, times, dueDate)
+      healthCard.nextDue = dueDate
+    }
+    await HealthCard.save()
+    reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -94,82 +140,12 @@ function calDueDate(freq, times, dueDate) {
     dueDate.setFullYear(dueDate.getFullYear() + times)
   }
 }
-// async function deleteHealthCard(req, reply) {
-//   try {
-//     const healthCard = await HealthCard.findByIdAndDelete(req.params.healthCardId)
-//     reply.code(200).send(healthCard)
-//   } catch {
-//     console.error(error)
-//     reply.code(500).send(error)
-//   }
-// }
-
-async function deleteVetCard(req, reply) {
-  try {
-    const healthCard = await HealthCard.findById(req.params.healthCardId)
-    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
-    vetCard.deleteOne()
-    await healthCard.save()
-    reply.code(200).send(vetCard)
-  } catch (error) {
-    console.error(error)
-    reply.code(500).send(error)
-  }
-}
-
-async function updateVetCard(req, reply) {
-  try {
-    req.body.isVaccine = !!req.body.isVaccine
-    const healthCard = await HealthCard.findById(req.params.healthCardId)
-    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
-    vetCard.name = req.body.name
-    vetCard.isVaccine = req.body.isVaccine
-    vetCard.type = req.body.type
-    vetCard.times = req.body.times
-    vetCard.frequency = req.body.frequency
-    vetCard.lastDone = req.body.lastDone
-
-    const freq = vetCard.frequency
-    const times = vetCard.times
-    const dueDate = new Date(vetCard.lastDone)
-    calDueDate(freq, times, dueDate)
-    vetCard.nextDue = dueDate
-
-    await healthCard.save()
-    reply.code(200).send(vetCard)
-  } catch (error) {
-    console.error(error)
-    reply.code(500).send(error)
-  }
-}
-
-async function checkDone(req, reply) {
-  try {
-    const healthCard = await HealthCard.findById(req.params.healthCardId)
-    const vetCard = healthCard.vetCards.id(req.params.vetCardId)
-    
-    vetCard.lastDone = req.body.lastDone
-    const freq = vetCard.frequency
-    const times = vetCard.times
-    const dueDate = new Date(vetCard.lastDone)
-    calDueDate(freq, times, dueDate)
-    vetCard.nextDue = dueDate
-
-    await healthCard.save()
-    reply.code(200).send(vetCard)
-  } catch (error) {
-    console.error(error)
-    reply.code(500).send(error)
-  }
-}
 
 export {
   index,
-  // create,
+  create,
   show,
-  addVetCard,
-  // deleteHealthCard as delete,
-  deleteVetCard,
-  updateVetCard,
+  deleteHealthCard as delete,
+  update,
   checkDone,
 }

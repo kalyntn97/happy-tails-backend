@@ -1,28 +1,32 @@
 import { CareCard } from "../models/careCard.js"
 import { Profile } from "../models/profile.js"
-import { getCurrentDate } from "./helper.js"
+import { getCurrentDate, getDateInfo, isNewMonthYear } from "./helper.js"
 
 async function create(req, reply) {
   try {
-    const { currentYear, currentMonth, firstDay } = getCurrentDate()
-    const { times, frequency } = req.body
+    const { repeat, date, frequency, times } = req.body
+    const { month: startMonth, year: startYear, firstDay } = getDateInfo(new Date(date))
+    // const { date: stopDate, month: stopMonth, year: stopYear } = getDateInfo(endDate)
     // create empty tracker
     req.body.trackers = []
-    req.body.trackers.push({
-      name: frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : currentMonth + '-' + currentYear,
-      done: [],
-    })
+    if (repeat) {
+      req.body.trackers.push({
+        name: frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`
+      })
+    } else {
+      req.body.trackers.push({ name: 'no-repeat', done: Array(1).fill(0)})
+    }
     // set initial total and done values
     const newTracker = req.body.trackers[req.body.trackers.length - 1]
-    newTracker.total = calTotal(times, frequency, newTracker)
-    if (frequency === 'Yearly') {
-      newTracker.done.push(0)
-    } else {
-      for (let i = 0; i < newTracker.total; i++) {
-        newTracker.done.push(0)
-      }  
-      if (frequency === 'Daily') {
-        newTracker.firstDay = firstDay
+    if (repeat) {
+      newTracker.total = calTotal(times, frequency, newTracker)
+      if (frequency === 'Yearly') {
+        newTracker.done = Array(1).fill(0)
+      } else {
+        newTracker.done = Array(newTracker.total).fill(0)
+        if (frequency === 'Daily') {
+          newTracker.firstDay = firstDay
+        }
       }
     }
     // create new CareCard and save to profile
@@ -43,7 +47,7 @@ async function deleteCareCard(req, reply) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
     await careCard.deleteOne()
-    reply.code(200).send(careCard)
+    reply.code(200).send(careCard._id)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -52,33 +56,34 @@ async function deleteCareCard(req, reply) {
 
 async function update(req, reply) {
   try {
-    console.log('data received', req.body)
-    const { currentYear, currentMonth } = getCurrentDate()
-    const { times, frequency } = req.body
+    const { repeat, date, frequency, times } = req.body
+    const { month: startMonth, year: startYear} = getDateInfo(new Date(date))
 
     const careCard = await CareCard.findByIdAndUpdate(
       {'_id': req.params.careCardId},
       req.body,
       { new: true }
-    )
+    ).populate({ path: 'pets' })
     // get the latest tracker
-    const updatedTracker = careCard.trackers[careCard.trackers.length - 1]
+    let updatedTracker = careCard.trackers[careCard.trackers.length - 1]
     // reset the tracker field
-    updatedTracker.total = calTotal(times, frequency, updatedTracker)
-    updatedTracker.done = []
-    if (frequency === 'Yearly') {
-      updatedTracker.done.push(0)
+    if (repeat) {
+      updatedTracker.name = frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`
+      updatedTracker.total = calTotal(times, frequency, updatedTracker)
+      if (frequency === 'Yearly') {
+        updatedTracker.done = Array(1).fill(0)
+      } else {
+        updatedTracker.done = Array(updatedTracker.total).fill(0)
+        if (frequency === 'Daily' && !updatedTracker.firstDay) {
+          updatedTracker.firstDay = firstDay
+        }
+      }
     } else {
-      for (let i = 0; i < updatedTracker.total; i++) {
-        updatedTracker.done.push(0)
-      }
-      if (frequency === 'Daily' && !updatedTracker.firstDay) {
-        updatedTracker.firstDay = firstDay
-      }
+      careCard.endDate = null
+      careCard.frequency = null
+      careCard.times = null
+      updatedTracker = { name: 'no-repeat', done: [0], firstDay: null, total: null }
     }
-
-    updatedTracker.name = frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : `${currentMonth}-${currentYear}`
-
     await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
@@ -90,27 +95,52 @@ async function update(req, reply) {
 async function index(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-    .populate([
-      { path: 'careCards',
-        populate: [
-          { path: 'trackers' },
-          { path: 'pets' },
-        ]
-      }
-    ])
+    .populate({ path: 'careCards', populate: [{ path: 'trackers' }, { path: 'pets' }] })
     const careCards = profile.careCards
-    reply.code(200).send(careCards)
+    let sortedCares = sortByFrequency(careCards)
+    //check if a new tracker should be created
+    const { isNewMonth, isNewYear } = isNewMonthYear()
+    if (isNewMonth || isNewYear) {
+      sortedCares = await updateCareCards(sortedCares, isNewMonth, isNewYear)
+    }
+    reply.code(200).send(sortedCares)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
   }
 }
 
+async function updateCareCards(sortedCares, isNewMonth, isNewYear) {
+  const careCardIds = [] // collect CareCard Ids that need new trackers
+  //create trackers based on frequency, only repeating tasks
+  if (isNewMonth) {
+    ['Daily', 'Weekly'].forEach(frequency => 
+      sortedCares[frequency].forEach(care => careCardIds.push(care._id))
+    )
+  }
+  if (isNewYear) {
+    ['Monthly', 'Yearly'].forEach(frequency => 
+      sortedCares[frequency].forEach(care => careCardIds.push(care._id))
+    )
+  }
+  //batch create trackers for all CareCards
+  const careCardsToProcess = await CareCard.find({ _id: { $in: careCardIds } }).populate('trackers')
+  const trackerCreationPromises = careCardsToProcess.map(careCard => createTracker(careCard))
+  await Promise.all(trackerCreationPromises)
+  //update sorted CareCards with new trackers
+  trackerCreationPromises.forEach(careCard => {
+    const { frequency } = careCard
+    const careIndex = sortedCares[frequency].findIndex(({ _id }) => _id.toString() === careCard._id.toString())
+    sortedCares[frequency][careIndex] = careCard.toObject()
+  })
+
+  return sortedCares
+}
+
 async function show(req, reply) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
     .populate({ path: 'pets' })
-    
     reply.code(200).send(careCard)
   } catch (error) {
     console.error(error)
@@ -118,16 +148,26 @@ async function show(req, reply) {
   }
 }
 
+// async function showTracker(req, reply) {
+//   try {
+//     const careCard = await CareCard.findById(req.params.careCardId)
+//     const tracker = careCard.trackers[req.params.index]
+//     reply.code(200).send(tracker)
+//   } catch (error) {
+//     console.error(error)
+//     reply.code(500).send(error)
+//   }
+// }
+
 async function checkDone(req, reply) {
-  const { daysPassed, weeksPassed } = getCurrentDate()
-  console.log(`Days passed: ${daysPassed}, Weeks passed: ${weeksPassed}`)
-  console.log('idx main func', req.body.index)
-  const updateFunction = (tracker, frequency, index) => {
+  const updateFunction = (tracker, index, frequency) => {
     // index is current field
     if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
       tracker.done[index]++
     // Yearly tracker only contain 1 count
     } else if (frequency === 'Yearly') {
+      tracker.done[0]++
+    } else {
       tracker.done[0]++
     }
     return tracker
@@ -136,14 +176,47 @@ async function checkDone(req, reply) {
 }
 
 async function uncheck(req, reply) {
-  const { daysPassed, weeksPassed } = getCurrentDate()
-  const updateFunction = (tracker, frequency, index) => {
+  const updateFunction = (tracker, index, frequency) => {
     // index is current field
     if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
       tracker.done[index]--
     // Yearly tracker only contain 1 count
     } else if (frequency === 'Yearly') {
       tracker.done[0]--
+    } else {
+      tracker.done[0]--
+    }
+    return tracker
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
+async function checkAllDone(req, reply) {
+  const updateFunction = (tracker, index, frequency, times) => {
+    // index is current field
+    if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
+      tracker.done[index] = times 
+    // Yearly tracker only contain 1 count
+    } else if (frequency === 'Yearly') {
+      tracker.done[0] = times
+    } else {
+      tracker.done[0] = 1
+    }
+    return tracker
+  }
+  await updateTracker(req, reply, updateFunction)
+}
+
+async function uncheckAll(req, reply) {
+  const updateFunction = (tracker, index, frequency) => {
+    // index is current field
+    if (frequency === 'Daily' || frequency === 'Weekly' || frequency === 'Monthly') {
+      tracker.done[index] = 0
+    // Yearly tracker only contain 1 count
+    } else if (frequency === 'Yearly') {
+      tracker.done[0] = 0
+    } else {
+      tracker.done[0] = 0
     }
     return tracker
   }
@@ -154,9 +227,7 @@ async function updateTracker(req, reply, updateFunction) {
   try {
     const careCard = await CareCard.findById(req.params.careCardId)
     const tracker = careCard.trackers.id(req.params.trackerId)
-    console.log('tracker found', tracker, 'freq', careCard.frequency, 'idx', req.body.index)
-    const updatedTracker = updateFunction(tracker, careCard.frequency, req.body.index)
-    console.log('updated tracker', updatedTracker)
+    const updatedTracker = updateFunction(tracker, req.body.index, careCard.frequency, careCard.times)
     tracker.done = updatedTracker.done
     await careCard.save()
     reply.code(200).send(tracker)
@@ -166,17 +237,20 @@ async function updateTracker(req, reply, updateFunction) {
   }
 }
 
-async function autoCreateTracker(req, reply) {
+async function createTracker(careCard) {
   try {
-    const careCard = await CareCard.findById(req.params.careCardId)
+    const { currentYear, firstDay } = getCurrentDate()
+    //find the CareCard
+    // const careCard = await CareCard.findById(careCardId)
+    const { frequency, date } = careCard
 
-    const { currentYear, currentMonth, firstDay } = getCurrentDate()
-    const frequency = careCard.frequency
+    const { month: startMonth, year: startYear } = getDateInfo(date)
+    //get the latest tracker to copy
     const latestTracker = careCard.trackers[careCard.trackers.length - 1]
 
-    //create new tracker
+    //create new tracker and save to CareCard
     const newTracker = {
-      name: frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : `${currentMonth}-${currentYear}`,
+      name: frequency === 'Yearly' || frequency === 'Monthly' ? currentYear : `${startMonth}-${startYear}`,
       total: latestTracker.total, //same tracker rollover
       done: []
     }
@@ -186,14 +260,13 @@ async function autoCreateTracker(req, reply) {
       for (let i = 0; i < newTracker.total; i++) {
         newTracker.done.push(0)
       }
-      if (frequency === 'Daily' && !newTracker.firstDay) {
+      if (frequency === 'Daily') {
         newTracker.firstDay = firstDay
       }
     }
     careCard.trackers.push(newTracker)
     await careCard.save()
-
-    reply.code(200).send(careCard)
+    return careCard
   } catch (error) {
     console.error(error)
   }
@@ -201,16 +274,34 @@ async function autoCreateTracker(req, reply) {
 
 function calTotal(times, freq, tracker) {
   const { daysInMonth, weeksInMonth } = getCurrentDate()
-  if (freq === 'Daily') {
-    tracker.total = daysInMonth
-  } else if (freq === 'Weekly') {
-    tracker.total = weeksInMonth
-  } else if (freq === 'Monthly') {
-    tracker.total = 12
-  } else if (freq === 'Yearly') {
-    tracker.total = times
+  const totalMap = {
+    Daily: daysInMonth,
+    Weekly: weeksInMonth,
+    Monthly: 12,
+    Yearly: times
   }
-  return tracker.total
+  return tracker.total = totalMap[freq]
+  // if (freq === 'Daily') {
+  //   tracker.total = daysInMonth
+  // } else if (freq === 'Weekly') {
+  //   tracker.total = weeksInMonth
+  // } else if (freq === 'Monthly') {
+  //   tracker.total = 12
+  // } else if (freq === 'Yearly') {
+  //   tracker.total = times
+  // }
+  // return tracker.total
+}
+
+export const sortByFrequency = (careArray) => {
+  const sorted = careArray.reduce((result, careCard) => {
+    const { frequency } = careCard
+    const key = frequency || 'Others'
+    result[key] = result[frequency] || []
+    result[key].push(careCard) 
+    return result
+  }, {})
+  return sorted
 }
 
 export {
@@ -221,5 +312,6 @@ export {
   show,
   checkDone,
   uncheck,
-  autoCreateTracker,
+  checkAllDone,
+  uncheckAll,
 }

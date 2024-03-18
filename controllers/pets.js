@@ -1,6 +1,5 @@
 import { Pet } from "../models/pet.js"
 import { Profile } from "../models/profile.js"
-import { HealthCard } from "../models/healthCard.js"
 import { promises as fsPromises } from 'fs'
 import tmp from 'tmp-promise'
 import { v2 as cloudinary } from 'cloudinary'
@@ -8,7 +7,7 @@ import { v2 as cloudinary } from 'cloudinary'
 async function index(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-    .populate({ path: 'pets'})
+    .populate({ path: 'pets' })
     const pets = profile.pets
     reply.code(200).send(pets)
   } catch (error) {
@@ -27,8 +26,6 @@ async function create(req, reply) {
       { new: true }
     )
     pet.parent = profile
-    const healthCard = await HealthCard.create({ 'pet': pet._id })
-    pet.healthCard = healthCard._id
     await pet.save()
     reply.code(201).send(pet)
   } catch (error) {
@@ -55,7 +52,7 @@ async function deletePet(req, reply) {
   try {
     const pet = await Pet.findById(req.params.petId)
     await pet.deleteOne()
-    reply.code(200).send(pet)
+    reply.code(200).send(pet._id)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -74,17 +71,15 @@ async function show(req, reply) {
 
 async function addPhoto(req, reply) {
   try {
-    // console.log('request', req)
-    // console.log('request file', req.file)
     const pet = await Pet.findById(req.params.petId)
     const binaryData = req.file.buffer
-    const result = await uploadImage(binaryData)
-    pet.photo = result
+    const url = await uploadImage(binaryData)
+    pet.photo = url
     await pet.save()
-    reply.code(200).send({message: 'Success', url: result})
+    reply.code(200).send(url)
   } catch (error) {
     console.error(error)
-    reply.code(500).send({message: 'Upload failed', error: error})
+    reply.code(500).send(error)
   }
 }
 
@@ -105,7 +100,6 @@ async function uploadImage(content) {
     return result.secure_url
   } catch (error) {
     console.error('Cloudinary error: ', error)
-    throw error
   }
 }
 
