@@ -9,6 +9,7 @@ const profileSchema = new Schema({
   name: { type: String },
   photo: { type: String },
   bio: { type: String },
+  reminderInterval: { type: Number, default: 30 },
   pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' }],
   careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
   healthCards: [{ type: Schema.Types.ObjectId, ref: 'HealthCard' }],

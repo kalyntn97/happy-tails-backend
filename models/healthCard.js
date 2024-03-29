@@ -3,13 +3,20 @@ import { Pet } from "./pet.js"
 
 const Schema = mongoose.Schema
 
+const visitSchema = new Schema({
+  date: { type: Date },
+  notes: { type: String },
+}, {
+  timestamps: true
+})
+
 const healthCardSchema = new Schema({
   name: { type: String },
-  isVaccine: { type: Boolean },
   type: { type: String },
+  vaccine: { type: String },
   times: { type: Number, default: 1 },
   frequency: { type: String},
-  lastDone: [{ type: Date }],
+  lastDone: [visitSchema],
   nextDue: { type: Date },
   pet: { type: Schema.Types.ObjectId, ref: 'Pet' },
 }, {

@@ -21,6 +21,7 @@ const careCardSchema = new Schema({
   endDate: { type: Date },
   frequency: { type: String },
   times: { type: Number },
+  color: { type: Number },
   trackers: [trackerSchema]
 }, {
   timestamps: true

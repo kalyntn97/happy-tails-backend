@@ -10,8 +10,8 @@ const petSchema = new Schema({
   age: { type: Number },
   species: { type: String },
   breed: { type: String },
+  color: { type: Number },
   photo: { type: String },
-  healthCards: [{ type: Schema.Types.ObjectId, ref: 'healthCard' }],
 }, {
   timestamps: true
 })

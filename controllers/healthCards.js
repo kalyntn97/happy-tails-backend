@@ -14,12 +14,8 @@ async function index(req, reply) {
     //     $match: { 'pet.parent': req.user.profile }
     //   },
     // ])
-    const profile = await Profile(req.user.profile)
-    .populate(
-      { path: 'healthCards',
-        populate: { path: 'pet' }
-      }
-    )
+    const profile = await Profile.findById(req.user.profile)
+    .populate({ path: 'healthCards', populate: { path: 'pet' } })
     const healthCards = profile.healthCards
     reply.code(200).send(healthCards)
   } catch (error) {
@@ -30,23 +26,21 @@ async function index(req, reply) {
 
 async function create(req, reply) {
   try {
-    req.body.isVaccine = !!req.body.isVaccine
     const healthCard = await HealthCard.create(req.body)
-    if (healthCard.lastDone && !healthCard.nextDue) {
-      const freq = healthCard.frequency
-      const times = healthCard.times
-      const dueDate = new Date(healthCard.lastDone)
-      
-      calDueDate(freq, times, dueDate)
-
-      healthCard.nextDue = dueDate
-    } else if (!healthCard.lastDone) {
-      healthCard.nextDue = new Date()
+    const { times, frequency, lastDone } = healthCard
+    if (!healthCard.nextDue) {
+      let nextDueDate
+      if (!lastDone.length) {
+        nextDueDate = new Date()
+      } else {
+        nextDueDate = lastDone[0].date
+      }
+      healthCard.nextDue = calDueDate(frequency, times, nextDueDate, 1)
     }
-    await HealthCard.save()
-    const pet = await Pet.findById(healthCard.pet)
-    pet.healthCards.push(healthCard._id)
-    await pet.save()
+    await healthCard.save()
+    const profile = await Profile.findById(req.user.profile)
+    profile.healthCards.push(healthCard._id)
+    await profile.save()
     reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
@@ -78,29 +72,22 @@ async function deleteHealthCard(req, reply) {
 
 async function update(req, reply) {
   try {
-    req.body.isVaccine = !!req.body.isVaccine
     const healthCard = await HealthCard.findByIdAndUpdate(
       req.params.healthCardId,
       req.body,
-      { new: true }
-    ).populate({ path: 'Pet' })
-
-    if (healthCard.lastDone && !healthCard.nextDue) {
-      const freq = healthCard.frequency
-      const times = healthCard.times
-      const dueDate = new Date(healthCard.lastDone)
-      
-      calDueDate(freq, times, dueDate)
-
-      healthCard.nextDue = dueDate
-    } else if (!healthCard.lastDone) {
-      healthCard.nextDue = new Date()
+      { new: true },
+    ).populate({ path: 'pet' })
+    const { times, frequency, lastDone } = healthCard
+    if (!healthCard.nextDue) {
+      let nextDueDate
+      if (!lastDone.length) {
+        nextDueDate = new Date()
+      } else {
+        nextDueDate = lastDone[0].date
+      }
+      healthCard.nextDue = calDueDate(frequency, times, nextDueDate, 1)
     }
-    await HealthCard.save()
-    const pet = await Pet.findById(healthCard.pet)
-    pet.healthCards.map(v => v._id === healthCard._id ? healthCard : v)
-    await pet.save()
-
+    await healthCard.save()
     reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
@@ -111,16 +98,10 @@ async function update(req, reply) {
 async function checkDone(req, reply) {
   try {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
-
-    healthCard.lastDone.push(req.body.done)
-    if (!req.body.nextDue) {
-      const freq = healthCard.frequency
-      const times = healthCard.times
-      const dueDate = new Date(healthCard.lastDone)
-      calDueDate(freq, times, dueDate)
-      healthCard.nextDue = dueDate
-    }
-    await HealthCard.save()
+    const { times, frequency, lastDone } = healthCard
+    lastDone.unshift(req.body)
+    healthCard.nextDue = calDueDate(frequency, times, new Date (req.body.date), 1)
+    await healthCard.save()
     reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
@@ -128,17 +109,41 @@ async function checkDone(req, reply) {
   }
 }
 
-function calDueDate(freq, times, dueDate) {
-  const lastDayOfMonth = new Date(dueDate.getFullYear(), dueDate.getMonth() + 1, 0)
-  const daysInMonth = lastDayOfMonth.getDate()
-
-  if (freq === 'monthly') {
-    dueDate.setDate(dueDate.getDate() + Math.ceil(daysInMonth / times))
-  } else if (freq === 'yearly') {
-    dueDate.setMonth(dueDate.getMonth() + Math.ceil(12 / times))
-  } else if (freq === 'years') {
-    dueDate.setFullYear(dueDate.getFullYear() + times)
+async function uncheckDone(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    const { times, frequency, lastDone } = healthCard
+    const visit = lastDone.id(req.params.visitId)
+    if (visit._id === lastDone[0]._id) {
+      //*when removing the last visit, calculate backward from the last visit if it is the only visit
+      if (lastDone.length === 1) {
+        healthCard.nextDue = calDueDate(frequency, times, new Date (lastDone[0].date), -1)
+      } else {
+        healthCard.nextDue = calDueDate(frequency, times, new Date (lastDone[1].date), 1)
+      }
+    } 
+    lastDone.remove(visit)
+    await healthCard.save()
+    reply.code(200).send(visit._id)
+  } catch (error) {
+    console.error(error)
+    reply.code(500).send(error)
   }
+}
+
+function calDueDate(frequency, times, nextDueDate, direction) {
+  //* calculate forward or backward based on direction value (1 or -1)
+  switch (frequency) {
+    case 'day(s)': nextDueDate.setDate(nextDueDate.getDate() + Number(times) * direction); break
+    case 'week(s)': nextDueDate.setDate(nextDueDate.getDate() + Number(times) * 7 * direction); break
+    case 'month(s)':
+      const newMonth = nextDueDate.getMonth() + Number(times) * direction
+      nextDueDate.setMonth(newMonth % 12) //handle month rollover
+      nextDueDate.setFullYear(nextDueDate.getFullYear() + Math.floor(newMonth / 12) * direction) //handle year rollover
+      break
+    case 'year(s)': nextDueDate.setFullYear(nextDueDate.getFullYear() + Number(times) * direction); break
+  }
+  return nextDueDate
 }
 
 export {
@@ -148,4 +153,5 @@ export {
   deleteHealthCard as delete,
   update,
   checkDone,
+  uncheckDone,
 }

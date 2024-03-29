@@ -6,7 +6,6 @@ async function create(req, reply) {
   try {
     const { repeat, date, frequency, times } = req.body
     const { month: startMonth, year: startYear, firstDay } = getDateInfo(new Date(date))
-    // const { date: stopDate, month: stopMonth, year: stopYear } = getDateInfo(endDate)
     // create empty tracker
     req.body.trackers = []
     if (repeat) {
@@ -57,10 +56,10 @@ async function deleteCareCard(req, reply) {
 async function update(req, reply) {
   try {
     const { repeat, date, frequency, times } = req.body
-    const { month: startMonth, year: startYear} = getDateInfo(new Date(date))
+    const { month: startMonth, year: startYear, firstDay} = getDateInfo(new Date(date))
 
     const careCard = await CareCard.findByIdAndUpdate(
-      {'_id': req.params.careCardId},
+      req.params.careCardId,
       req.body,
       { new: true }
     ).populate({ path: 'pets' })
@@ -115,12 +114,16 @@ async function updateCareCards(sortedCares, isNewMonth, isNewYear) {
   //create trackers based on frequency, only repeating tasks
   if (isNewMonth) {
     ['Daily', 'Weekly'].forEach(frequency => 
-      sortedCares[frequency].forEach(care => careCardIds.push(care._id))
+      sortedCares[frequency]
+      .filter(care => !care.ending || (care.ending && new Date(care.endDate) > new Date())) //condition
+      .forEach(care => careCardIds.push(care._id))
     )
   }
   if (isNewYear) {
     ['Monthly', 'Yearly'].forEach(frequency => 
-      sortedCares[frequency].forEach(care => careCardIds.push(care._id))
+      sortedCares[frequency]
+      .filter(care => !care.ending || (care.ending && new Date(care.endDate) > new Date())) //condition
+      .forEach(care => careCardIds.push(care._id))
     )
   }
   //batch create trackers for all CareCards
@@ -147,17 +150,6 @@ async function show(req, reply) {
     reply.code(500).send(error)
   }
 }
-
-// async function showTracker(req, reply) {
-//   try {
-//     const careCard = await CareCard.findById(req.params.careCardId)
-//     const tracker = careCard.trackers[req.params.index]
-//     reply.code(200).send(tracker)
-//   } catch (error) {
-//     console.error(error)
-//     reply.code(500).send(error)
-//   }
-// }
 
 async function checkDone(req, reply) {
   const updateFunction = (tracker, index, frequency) => {
@@ -281,23 +273,13 @@ function calTotal(times, freq, tracker) {
     Yearly: times
   }
   return tracker.total = totalMap[freq]
-  // if (freq === 'Daily') {
-  //   tracker.total = daysInMonth
-  // } else if (freq === 'Weekly') {
-  //   tracker.total = weeksInMonth
-  // } else if (freq === 'Monthly') {
-  //   tracker.total = 12
-  // } else if (freq === 'Yearly') {
-  //   tracker.total = times
-  // }
-  // return tracker.total
 }
 
 export const sortByFrequency = (careArray) => {
   const sorted = careArray.reduce((result, careCard) => {
     const { frequency } = careCard
     const key = frequency || 'Others'
-    result[key] = result[frequency] || []
+    result[key] = result[key] || []
     result[key].push(careCard) 
     return result
   }, {})
