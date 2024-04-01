@@ -13,6 +13,8 @@ const profilesRoutes = async (fastify, opts, done )=> {
     fastify.get('/', profilesCtrl.show)
     fastify.put('/update', profilesCtrl.update)
     fastify.patch('/add-photo', { preHandler: fastify.upload.single('file') }, profilesCtrl.addPhoto)
+    fastify.patch('/add-banner', { preHandler: fastify.upload.single('file') }, profilesCtrl.addBanner)
+    fastify.patch('/streak', profilesCtrl.updateStreak)
   
   done()
 }

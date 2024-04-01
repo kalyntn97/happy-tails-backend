@@ -15,6 +15,7 @@ const healthCardsRoutes = async (fastify, opts, done) => {
     fastify.put('/:healthCardId', healthCardsCtrl.update)
     fastify.patch('/:healthCardId/check', healthCardsCtrl.checkDone),
     fastify.patch('/:healthCardId/:visitId/uncheck', healthCardsCtrl.uncheckDone),
+    fastify.patch('/:healthCardId/:visitId/add-notes', healthCardsCtrl.addVisitNotes),
     fastify.delete('/:healthCardId', healthCardsCtrl.delete),
   done()
 }

@@ -41,6 +41,10 @@ async function update(req, reply) {
       req.body,
       { new : true }
     )
+    if (pet.species === 'Others') {
+      pet.breed = null
+    }
+    await pet.save()
     reply.code(200).send(pet)
   } catch (error) {
     console.error(error)

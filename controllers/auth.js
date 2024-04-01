@@ -100,7 +100,7 @@ export async function changeUsername(req, reply) {
     req.user.username = req.body.newUsername
 
     await req.user.save()
-    reply.send({ status: 'Your account has been changed', user: req.user })
+    reply.send({ status: 'Your username has been changed', user: req.user.username })
   } catch (error) {
     console.error(error)
     reply.status(500).send(error)

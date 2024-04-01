@@ -131,6 +131,19 @@ async function uncheckDone(req, reply) {
   }
 }
 
+async function addVisitNotes(req, reply) {
+  try {
+    const healthCard = await HealthCard.findById(req.params.healthCardId)
+    const visit = healthCard.lastDone.id(req.params.visitId)
+    visit.notes = req.body.notes
+    await healthCard.save()
+    reply.code(200).send(visit)
+  } catch (error) {
+    console.error(error)
+    reply.code(500).send(error)
+  }
+}
+
 function calDueDate(frequency, times, nextDueDate, direction) {
   //* calculate forward or backward based on direction value (1 or -1)
   switch (frequency) {
@@ -154,4 +167,5 @@ export {
   update,
   checkDone,
   uncheckDone,
+  addVisitNotes,
 }
