@@ -19,7 +19,6 @@ const profileSchema = new Schema({
   photo: { type: String },
   banner: { type: String },
   bio: { type: String },
-  reminderInterval: { type: Number, default: 30 },
   streak: streakSchema,
   pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' }],
   careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],

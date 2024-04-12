@@ -8,8 +8,7 @@ async function index(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
     .populate({ path: 'pets' })
-    const pets = profile.pets
-    reply.code(200).send(pets)
+    reply.code(200).send(profile.pets)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -20,13 +19,10 @@ async function create(req, reply) {
   try {
     req.body.parent = req.user.profile
     const pet = await Pet.create(req.body)
-    const profile = await Profile.findByIdAndUpdate(
-      req.user.profile,
-      { $push: { pets: pet }},
-      { new: true }
+    await Profile.updateOne(
+      { _id: req.user.profile },
+      { $push: { pets: pet._id }},
     )
-    pet.parent = profile
-    await pet.save()
     reply.code(201).send(pet)
   } catch (error) {
     console.error(error)
@@ -38,13 +34,9 @@ async function update(req, reply) {
   try {
     const pet = await Pet.findByIdAndUpdate(
       req.params.petId,
-      req.body,
+      req.body.species === 'Others' ? { ...req.body, breed: null } : req.body,
       { new : true }
     )
-    if (pet.species === 'Others') {
-      pet.breed = null
-    }
-    await pet.save()
     reply.code(200).send(pet)
   } catch (error) {
     console.error(error)

@@ -1,41 +1,36 @@
 import { CareCard } from "../models/careCard.js"
+import { Pet } from "../models/pet.js"
 import { Profile } from "../models/profile.js"
 import {getDateInfo, isNewMonthYear } from "./helper.js"
 
 async function create(req, reply) {
   try {
     const { repeat, date, frequency, times } = req.body
+    
     const { month: startMonth, year: startYear, firstDay } = getDateInfo(new Date(date))
     // create empty tracker
-    req.body.trackers = []
+    let trackers = []
     if (repeat) {
-      req.body.trackers.push({
-        name: frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`
-      })
-    } else {
-      req.body.trackers.push({ name: 'no-repeat', done: Array(1).fill(0)})
-    }
-    // set initial total and done values
-    const newTracker = req.body.trackers[req.body.trackers.length - 1]
-    if (repeat) {
-      newTracker.total = calTotal(times, frequency, newTracker)
-      if (frequency === 'Yearly') {
-        newTracker.done = Array(1).fill(0)
-      } else {
-        newTracker.done = Array(newTracker.total).fill(0)
-        if (frequency === 'Daily') {
-          newTracker.firstDay = firstDay
-        }
+      const total = calTotal(times, frequency, new Date())
+      const tracker = {
+        name: frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`,
+        total: total,
+        done: frequency === 'Yearly' ? Array(1).fill(0) : Array(total).fill(0),
+        firstDay: frequency === 'Daily' ? firstDay : null,
       }
+      trackers.push(tracker)
+    } else {
+      trackers.push({ name: 'no-repeat', done: Array(1).fill(0)})
     }
+    req.body.trackers = trackers
     // create new CareCard and save to profile
     const careCard = await CareCard.create(req.body)
-    const profile = await Profile.findById(req.user.profile)
-    profile.careCards.push(careCard._id)
-    await profile.save()
+    await Pet.updateMany(
+      { _id: { $in: careCard.pets } },
+      { $push: { careCards: careCard._id }}
+    )
     // send back careCard with populated pets
-    const newCareCard = await CareCard.findById(careCard._id).populate({ path: 'pets' })
-    reply.code(201).send(newCareCard)
+    reply.code(201).send(careCard)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -55,34 +50,29 @@ async function deleteCareCard(req, reply) {
 
 async function update(req, reply) {
   try {
-    const { repeat, date, frequency, times } = req.body
+    const { repeat, date, frequency, times, endDate, trackers } = req.body
     const { month: startMonth, year: startYear, firstDay} = getDateInfo(new Date(date))
-
+    let updatedTracker = null
+    if (repeat) {
+      const total = calTotal(times, frequency, date)
+      updatedTracker = {
+        name: frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`,
+        total: total,
+        done: frequency === 'Yearly' ? Array(1).fill(0) : Array(total).fill(0),
+        firstDay: frequency === 'Daily' ? firstDay : null,
+      }
+    } else {
+      endDate = null
+      frequency = null
+      times = null
+      updatedTracker = { name: 'no-repeat', done: [0], firstDay: null, total: null }
+    }
     const careCard = await CareCard.findByIdAndUpdate(
       req.params.careCardId,
       req.body,
       { new: true }
     ).populate({ path: 'pets' })
-    // get the latest tracker
-    let updatedTracker = careCard.trackers[careCard.trackers.length - 1]
-    // reset the tracker field
-    if (repeat) {
-      updatedTracker.name = frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`
-      updatedTracker.total = calTotal(times, frequency, updatedTracker)
-      if (frequency === 'Yearly') {
-        updatedTracker.done = Array(1).fill(0)
-      } else {
-        updatedTracker.done = Array(updatedTracker.total).fill(0)
-        if (frequency === 'Daily' && !updatedTracker.firstDay) {
-          updatedTracker.firstDay = firstDay
-        }
-      }
-    } else {
-      careCard.endDate = null
-      careCard.frequency = null
-      careCard.times = null
-      updatedTracker = { name: 'no-repeat', done: [0], firstDay: null, total: null }
-    }
+    careCard.trackers.push(updatedTracker)
     await careCard.save()
     reply.code(200).send(careCard)
   } catch (error) {
@@ -94,9 +84,9 @@ async function update(req, reply) {
 async function index(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-    .populate({ path: 'careCards', populate: [{ path: 'trackers' }, { path: 'pets' }] })
-    const careCards = profile.careCards 
-    // const careCards = profile.careCards
+    const careCards = await CareCard.find({ pets: { $in: profile.pets } })
+    .populate({ path: 'pets' })
+    
     let sortedCares = sortByFrequency(careCards)
     //check if a new tracker should be created
     const { isNewMonth, isNewYear } = isNewMonthYear()
@@ -265,25 +255,28 @@ async function updateTracker(req, reply, updateFunction) {
   }
 }
 
-function calTotal(times, freq, tracker) {
-  const { daysInMonth, weeksInMonth } = getDateInfo(new Date())
+function calTotal(times, freq, date) {
+  const { daysInMonth, weeksInMonth } = getDateInfo(new Date(date))
   const totalMap = {
     Daily: daysInMonth,
     Weekly: weeksInMonth,
     Monthly: 12,
     Yearly: times
   }
-  return tracker.total = totalMap[freq]
+  return totalMap[freq]
 }
 
 export const sortByFrequency = (careArray) => {
-  const sorted = careArray.reduce((result, careCard) => {
-    const { frequency } = careCard
-    const key = frequency || 'Others'
-    result[key] = result[key] || []
-    result[key].push(careCard) 
+  const sortOrder = ['Daily', 'Weekly', 'Monthly', 'Yearly', 'Others']
+  const sorted = sortOrder.reduce((result, frequency) => {
+    result[frequency] = []
     return result
   }, {})
+  careArray.forEach(care => {
+    const { frequency } = care
+    const key = frequency || 'Others'
+    sorted[key].push(care)
+  })
   return sorted
 }
 

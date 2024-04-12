@@ -6,6 +6,7 @@ const Schema = mongoose.Schema
 const visitSchema = new Schema({
   date: { type: Date },
   notes: { type: String },
+  overdue: { type: Boolean },
 }, {
   timestamps: true
 })
@@ -17,7 +18,7 @@ const healthCardSchema = new Schema({
   times: { type: Number, default: 1 },
   frequency: { type: String},
   lastDone: [visitSchema],
-  nextDue: { type: Date },
+  nextDue: visitSchema,
   pet: { type: Schema.Types.ObjectId, ref: 'Pet' },
 }, {
   timestamps: true

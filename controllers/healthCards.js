@@ -5,18 +5,11 @@ import { Profile } from "../models/profile.js"
 async function index(req, reply) {
   try {
     // mongoDB method
-    // const healthCards = await HealthCard.aggregate([
-    //   { 
-    //     $lookup: { from: 'pets', localField: 'pet', foreignField: '_id', as: 'pet' }
-    //   }, { 
-    //     $unwind: '$pet' 
-    //   }, {
-    //     $match: { 'pet.parent': req.user.profile }
-    //   },
-    // ])
-    const profile = await Profile.findById(req.user.profile)
-    .populate({ path: 'healthCards', populate: { path: 'pet' } })
-    const healthCards = profile.healthCards
+    const healthCards = await HealthCard.aggregate([
+      { $lookup: { from: 'pets', localField: 'pet', foreignField: '_id', as: 'pet' } }, 
+      { $unwind: '$pet' }, 
+      { $match: { 'pet.parent': req.user.profile } },
+    ])
     reply.code(200).send(healthCards)
   } catch (error) {
     console.error(error)
@@ -35,12 +28,17 @@ async function create(req, reply) {
       } else {
         nextDueDate = lastDone[0].date
       }
-      healthCard.nextDue = calDueDate(frequency, times, nextDueDate, 1)
+      healthCard.nextDue = {
+        date: calDueDate(frequency, times, nextDueDate, 1),
+        note: ''
+      } 
+      
     }
     await healthCard.save()
-    const profile = await Profile.findById(req.user.profile)
-    profile.healthCards.push(healthCard._id)
-    await profile.save()
+    await Pet.updateOne(
+      { _id: healthCard.pet },
+      { $push: { healthCards: healthCard._id } }
+    )
     reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
@@ -78,14 +76,17 @@ async function update(req, reply) {
       { new: true },
     ).populate({ path: 'pet' })
     const { times, frequency, lastDone } = healthCard
-    if (!healthCard.nextDue) {
+    if (!healthCard.nextDue.date) {
       let nextDueDate
       if (!lastDone.length) {
         nextDueDate = new Date()
       } else {
         nextDueDate = lastDone[0].date
       }
-      healthCard.nextDue = calDueDate(frequency, times, nextDueDate, 1)
+      healthCard.nextDue = { 
+        date: calDueDate(frequency, times, nextDueDate, 1),
+        notes: ''
+      }
     }
     await healthCard.save()
     reply.code(200).send(healthCard)
@@ -99,8 +100,11 @@ async function checkDone(req, reply) {
   try {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
     const { times, frequency, lastDone } = healthCard
-    lastDone.unshift(req.body)
-    healthCard.nextDue = calDueDate(frequency, times, new Date (req.body.date), 1)
+    lastDone.push(req.body)
+    healthCard.nextDue = {
+      date: calDueDate(frequency, times, new Date (req.body.date), 1),
+      notes: ''
+    }
     await healthCard.save()
     reply.code(200).send(healthCard)
   } catch (error) {
@@ -114,12 +118,18 @@ async function uncheckDone(req, reply) {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
     const { times, frequency, lastDone } = healthCard
     const visit = lastDone.id(req.params.visitId)
-    if (visit._id === lastDone[0]._id) {
+    if (visit._id === lastDone[lastDone.length - 1]._id) {
       //*when removing the last visit, calculate backward from the last visit if it is the only visit
       if (lastDone.length === 1) {
-        healthCard.nextDue = calDueDate(frequency, times, new Date (lastDone[0].date), -1)
+        healthCard.nextDue = {
+          date: calDueDate(frequency, times, new Date (lastDone[lastDone.length - 1].date), -1),
+          notes: ''
+        }
       } else {
-        healthCard.nextDue = calDueDate(frequency, times, new Date (lastDone[1].date), 1)
+        healthCard.nextDue = {
+          date: calDueDate(frequency, times, new Date (lastDone[lastDone.length - 2].date), 1),
+          notes: ''
+        }
       }
     } 
     lastDone.remove(visit)
@@ -134,10 +144,10 @@ async function uncheckDone(req, reply) {
 async function addVisitNotes(req, reply) {
   try {
     const healthCard = await HealthCard.findById(req.params.healthCardId)
-    const visit = healthCard.lastDone.id(req.params.visitId)
+    const visit = req.body.due ? healthCard.nextDue : healthCard.lastDone.id(req.params.visitId)
     visit.notes = req.body.notes
     await healthCard.save()
-    reply.code(200).send(visit)
+    reply.code(200).send(healthCard)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
