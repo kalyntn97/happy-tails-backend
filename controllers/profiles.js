@@ -1,10 +1,16 @@
 import { Profile } from "../models/profile.js"
+import { verifyTrackersUpToDate } from "./careCards.js"
 import { getDateInfo } from "./helper.js"
 import { uploadImage } from "./pets.js"
 
 export async function show(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
+  
+    await verifyTrackersUpToDate(profile)
+
+    profile.streak.lastDate = new Date()
+    await profile.save()
     // .populate([
     //   { path: 'pets' },
     //   { path: 'careCards', 

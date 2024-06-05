@@ -2,20 +2,26 @@ import mongoose from 'mongoose'
 import { Profile } from './profile.js'
 import { HealthCard } from './HealthCard.js'
 import { CareCard } from './careCard.js'
+import { Stat } from './stat.js'
 
 const Schema = mongoose.Schema
 
 const serviceSchema = new Schema({
-  name:{ type: String },
-  contact: {
-    address: [{ type: String }],
-    email: [{ type: String }],
-    phone: [{ type: String }],
-    fax: [{ type: String }],
-  },
-  notes: { type: String},
+  name: { type: String },
+  type: { type: String },
+  address: { type: String },
+  email: { type: String },
+  phones: [{ type: String }],
+  notes: { type: String },
 }, {
   timestamps: true
+})
+
+const idSchema = new Schema({
+  name: { type: String },
+  type: { type: String },
+  no: { type: String },
+  notes: { type: String },
 })
 
 const petSchema = new Schema({
@@ -39,12 +45,10 @@ const petSchema = new Schema({
   color: { type: Number },
   photo: { type: String },
   icon: { type: Number },
-  microchip: { type: String },  
-  licenses: [{ 
-    name: { type: String },
-    number: { type: String },
-  }],
+  ids: [idSchema],
   services: [serviceSchema],
+  medications: [{ type: Schema.Types.ObjectId, ref: 'Medication' }],
+  illnesses: [{ type: Schema.Types.ObjectId, ref: 'Illness' }],
   stats: [{ type: Schema.Types.ObjectId, ref: 'Stat' }],
   careCards: [{ type: Schema.Types.ObjectId, ref: 'CareCard' }],
   healthCards: [{ type: Schema.Types.ObjectId, ref: 'HealthCard' }],
@@ -56,9 +60,9 @@ petSchema.pre(['deleteOne', 'deleteMany'], { document: true, query: false }, asy
   try {
     const pet = this
     await Profile.updateOne({ pets: pet._id }, { $pull: { pets: pet._id } })
+    await CareCard.updateMany({ pets: pet._id }, { $pull: { pets: pet._id } })
     await HealthCard.deleteMany({ pet: pet._id })
     await Stat.deleteMany({ pet: pet._id })
-    await CareCard.updateMany({ pets: pet._id }, { $pull: { pets: pet._id } })
     return next()
   } catch (error) {
     return next(error)

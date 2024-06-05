@@ -3,12 +3,13 @@ import { Stat } from "../models/stat.js"
 
 async function create(req, reply) {
   try {
-    const { petId, logs } = req.body
-    const pet = await Pet.findById(petId)
+    const { logs, petId } = req.body
     
-    const logsToUpdate = pet.stats ? logs.filter(log => pet.stats.some(stat => stat.name = log.name)) : []
-    const logsToCreate = pet.stats ? logs.filter(log => !pet.stats.some(stat => stat.name = log.name)) : logs
-
+    const pet = await Pet.findById(petId).populate({ path: 'stats' })
+   
+    const logsToUpdate = pet.stats ? logs.filter(log => pet.stats.some(stat => stat.name === log.name)) : []
+    const logsToCreate = logs.filter(log => !logsToUpdate.some(l => l.name === log.name))
+    
     let logPromises = []
     let logsProcessed = []
     if (logsToCreate.length > 0) {
@@ -18,8 +19,7 @@ async function create(req, reply) {
       logPromises.push(...logsToUpdate.map(log => updateStat(log, pet)))
     }
     logsProcessed = await Promise.all(logPromises)
-
-    reply.code(200).send(logsProcessed)
+    reply.code(200).send(pet._id)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -39,13 +39,10 @@ async function createStat(log, pet) {
 
 async function updateStat(log, pet) {
   const { name, value, notes } = log
-  const statToUpdate = pet.stats.filter(stat => stat.name === name)
-  const stat = Stat.findByIdAndUpdate(
-    statToUpdate._id,
-    { $push: { records: { value, notes } } },
-    { new: true },
-  )
-  return stat
+  const statToUpdate = pet.stats.find(stat => stat.name === name)
+  statToUpdate.records.push({ value, notes })
+  await statToUpdate.save()
+  return statToUpdate
 }
 
 async function index(req, reply) {
@@ -63,5 +60,5 @@ async function index(req, reply) {
 }
 
 export {
-  create, index
+  create, index,
 }

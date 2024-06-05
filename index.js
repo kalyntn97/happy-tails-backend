@@ -40,7 +40,7 @@ app.register(usersRoutes, { prefix: '/api' })
 app.register(petsRoutes, { prefix: '/api/pets' })
 app.register(healthCardsRoutes, { prefix: '/api/health' })
 app.register(careCardsRoutes, { prefix: '/api/care' })
-app.register(statsRoutes, { prefix: '/api/stat' })
+app.register(statsRoutes, { prefix: '/api/stats' })
 
 //handle root route
 app.get('/', async function handler (req, reply) {

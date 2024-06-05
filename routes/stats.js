@@ -8,15 +8,8 @@ const statsRoutes = async (fastify, opts, done) => {
     .register(FastifyAuth)
     .after(() => {
       fastify.addHook('preHandler', fastify.auth([fastify.asyncVerifyJWT]))
-    })   
-    fastify.get('/', statsCtrl.index)
-    // fastify.get('/:healthCardId', healthCardsCtrl.show)
+    })
     fastify.post('/', statsCtrl.create)
-    // fastify.put('/:healthCardId', healthCardsCtrl.update)
-    // fastify.patch('/:healthCardId/check', healthCardsCtrl.checkDone),
-    // fastify.patch('/:healthCardId/:visitId/uncheck', healthCardsCtrl.uncheckDone),
-    // fastify.patch('/:healthCardId/:visitId/add-notes', healthCardsCtrl.addVisitNotes),
-    // fastify.delete('/:healthCardId', healthCardsCtrl.delete),
   done()
 }
 

@@ -1,12 +1,12 @@
 import mongoose from "mongoose"
-import { Profile } from "./profile.js"
+import { Pet } from "./pet.js"
 
 const Schema = mongoose.Schema
 
 const trackerSchema = new Schema({
   name: { type: String },
   total: { type: Number },
-  done: [{ type: Number }],
+  done: [{ value: { type: Number }, notes: { type: String } }],
   firstDay: { type: Number }
 }, {
   timestamps: true
@@ -14,9 +14,12 @@ const trackerSchema = new Schema({
 
 const careCardSchema = new Schema({
   name: { type: String, required: true },
+  medication: { 
+    name: { type: String },
+    amount: { type: String },
+  },
   pets: [{ type: Schema.Types.ObjectId, ref: 'Pet' , required: true }],
   repeat: { type: Boolean, required: true },
-  ending: { type: Boolean, required: true },
   date: { type: Date, required: true },
   endDate: { type: Date },
   frequency: { type: String },
