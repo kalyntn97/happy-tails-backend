@@ -61,7 +61,7 @@ async function update(req, reply) {
 async function index(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-    const sortedCares = await verifyTrackersUpToDate(profile)
+    const sortedCares = await verifyIndexUpdate(profile)
 
     reply.code(200).send(sortedCares)
   } catch (error) {
@@ -70,28 +70,34 @@ async function index(req, reply) {
   }
 }
 
-export async function verifyTrackersUpToDate (profile) {
-  let lastSavedDate = profile.streak.lastDate
-  
-  const careCards = await CareCard.find({ pets: { $in: profile.pets } })
-  .populate({ path: 'pets' })
-  
+export async function verifyIndexUpdate(profile) {
+  const careCards = await CareCard.find(
+    { $or: [
+      { 'pets.admin': profile._id },
+      { 'pets.editors': profile._id },
+    ] }, 
+    { trackers: { $slice: -1 } }
+  ).populate({ path: 'pets', select: 'name color photo icon' })
   let sortedCares = sortByFrequency(careCards)
   //check if a new tracker should be created
-  const { monthsPassed, yearsPassed } = compareMonthYear(new Date(), lastSavedDate)
-  if (monthsPassed !== 0 || yearsPassed !== 0) {
-    const { month, year } = getDateInfo(new Date())
-    const newTrackerNames = [`${month}-${year}`, `${year}`]
-    const isUpdated = careCards.some(care => {
-      return newTrackerNames.includes(care.trackers[care.trackers.length - 1].name)
-    })
-    if (!isUpdated) {
-      sortedCares = await updateCareCards(sortedCares, monthPeriods, yearPeriods)
+  const today = new Date()
+  let lastSavedDate = profile.streak.lastDate
+  if (today.toDateString() !== lastSavedDate.toDateString()) {
+    const { monthsPassed, yearsPassed, month, year } = compareMonthYear(today, lastSavedDate)
+    if (monthsPassed !== 0 || yearsPassed !== 0) {
+      const newTrackerNames = [`${month}-${year}`, `${year}`]
+      const isUpdated = careCards.some(care => {
+        return newTrackerNames.includes(care.trackers[care.trackers.length - 1].name)
+      })
+      if (!isUpdated) {
+        sortedCares = await updateCareCards(sortedCares, monthPeriods, yearPeriods)
+      }
     }
+    lastSavedDate = today
+    await profile.save()
   }
   return sortedCares
 }
-
 
 async function updateCareCards(sortedCares, monthPeriods, yearPeriods) {
   const careCardIds = [] // collect CareCard Ids that need new trackers
@@ -111,7 +117,8 @@ async function updateCareCards(sortedCares, monthPeriods, yearPeriods) {
     )
   }
   //batch create trackers for all CareCards
-  const careCardsToProcess = await CareCard.find({ _id: { $in: careCardIds } }).populate([{ path: 'trackers' }, { path: 'pets' }])
+  const careCardsToProcess = await CareCard.find({ _id: { $in: careCardIds }, trackers: { $slice: 0 } })
+    .populate({ path: 'pets', select: 'name color photo icon' })
   const trackerCreationPromises = careCardsToProcess.map(careCard => {
     const periods = ['Daily', 'Weekly'].includes(careCard.frequency) ? monthPeriods : yearPeriods
     return rollOverTracker(careCard, periods)

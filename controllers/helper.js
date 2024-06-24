@@ -33,10 +33,11 @@ export const isNewMonthYear = () => {
 
 export const compareMonthYear = (date1, date2) => {
   const { month, year } = getDateInfo(date1)
-
+  
   const { month: month2, year: year2 } = getDateInfo(date2)
   return {
     monthsPassed: month - month2,
     yearsPassed: year - year2,
+    month, year
   }
 }

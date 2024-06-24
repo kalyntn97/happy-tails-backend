@@ -1,39 +1,39 @@
+//models
+import { HealthCard } from "../models/HealthCard.js"
+import { Pet } from "../models/pet.js"
 import { Profile } from "../models/profile.js"
-import { verifyTrackersUpToDate } from "./careCards.js"
+//utils
 import { getDateInfo } from "./helper.js"
 import { uploadImage } from "./pets.js"
+import { verifyIndexUpdate as getUpdatedCareCards } from "./careCards.js"
 
-export async function show(req, reply) {
+export async function initialize(req, reply) {
   try {
     const profile = await Profile.findById(req.user.profile)
-  
-    await verifyTrackersUpToDate(profile)
-
-    profile.streak.lastDate = new Date()
-    await profile.save()
-    // .populate([
-    //   { path: 'pets' },
-    //   { path: 'careCards', 
-    //     populate: {
-    //       path: 'trackers',
-    //       path: 'pets'
-    //       // options: { sort: { createdAt: -1 }, limit: 1 }
-    //     }
-    //   },
-    //   { path: 'healthCards',
-    //     populate: {
-    //       path: 'pet',
-    //     }
-    //   },
-    // ])
-    reply.code(200).send(profile)
+    const profileId = profile._id
+    const [pets, cares, healths] = await Promise.all([
+      Pet.find({ $or: [
+        { 'admin': profileId },
+        { 'editors': profileId },
+      ] }).populate([
+        { path: 'admin', select: 'name photo' },
+        { path: 'editors', select: 'name photo' },
+      ]),
+      getUpdatedCareCards(profile),
+      HealthCard.find(
+        { $or: [
+          { 'pet.admin': profileId },
+          { 'pet.editors': profileId },
+        ] },
+        { lastDone: { $slice: -1 } }
+      ).populate({ path: 'pet', select: 'name color photo icon' })
+    ])
+    reply.code(200).send({ profile, pets, cares, healths })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
   }
-}
-
-export async function update(req, reply) {
+}export async function update(req, reply) {
   try {
     const profile = await Profile.findByIdAndUpdate(
       req.user.profile,

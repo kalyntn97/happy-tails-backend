@@ -32,7 +32,6 @@ async function create(req, reply) {
         date: calDueDate(frequency, times, nextDueDate, 1),
         note: ''
       } 
-      
     }
     await healthCard.save()
     await Pet.updateOne(

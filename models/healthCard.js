@@ -24,6 +24,8 @@ const healthCardSchema = new Schema({
   timestamps: true
 })
 
+healthCardSchema.index({ pet: 1 })
+
 const HealthCard = mongoose.model('HealthCard', healthCardSchema)
 
 healthCardSchema.pre('deleteOne', { document: true, query: false }, async function (next) {

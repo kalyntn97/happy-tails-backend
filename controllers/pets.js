@@ -21,12 +21,8 @@ async function index(req, reply) {
 
 async function create(req, reply) {
   try {
-    req.body.parent = req.user.profile
+    req.body.admin = req.user.profile
     const pet = await Pet.create(req.body)
-    await Profile.updateOne(
-      { _id: req.user.profile },
-      { $push: { pets: pet._id }},
-    )
     reply.code(201).send(pet)
   } catch (error) {
     console.error(error)
@@ -62,7 +58,6 @@ async function deletePet(req, reply) {
 async function show(req, reply) {
   try {
     const pet = await Pet.findById(req.params.petId)
-    .populate([{ path: 'stats' }, { path: 'illnesses' }, { path: 'medications' }])
     reply.code(200).send(pet)
   } catch (error) {
     console.error(error)
@@ -112,7 +107,7 @@ async function addId(req, reply) {
       { new: true },
     )
     const newId = pet.ids[pet.ids.length - 1]
-    reply.code(200).send(newId._id)
+    reply.code(200).send({ item: newId, type: 'ids' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -139,7 +134,7 @@ async function deleteId(req, reply) {
       { $pull: { ids: { _id: req.params.idId } } },
       { new: true },
     )
-    reply.code(200).send(req.params.idId)
+    reply.code(200).send({ itemId: req.params.idId, type: 'ids' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -182,7 +177,7 @@ async function addMed(req, reply) {
       { new: true },
     )
 
-    reply.code(200).send(newMed._id)
+    reply.code(200).send({ item: newMed, type: 'medications' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -194,7 +189,7 @@ async function deleteMed(req, reply) {
     const medication = await Medication.findById(req.params.medId)
     await medication.deleteOne()
   
-    reply.code(200).send(req.params.medId)
+    reply.code(200).send({ itemId: req.params.medId, type: 'medications' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -209,7 +204,7 @@ async function addService(req, reply) {
       { new: true },
     )
     const newService = pet.services[pet.services.length - 1]
-    reply.code(200).send(newService._id)
+    reply.code(200).send({ item: newService, type: 'services' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -223,7 +218,7 @@ async function deleteService(req, reply) {
       { $pull: { services: { _id: req.params.serviceId } } },
       { new: true },
     )
-    reply.code(200).send(req.params.serviceId)
+    reply.code(200).send({ itemId: req.params.serviceId, type: 'services' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -237,7 +232,7 @@ async function addIllness(req, reply) {
       req.params.petId,
       { $push: { illnesses: illness._id } },
     )
-    reply.code(200).send(illness._id)
+    reply.code(200).send({ item: illness, type: 'illnesses' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -251,7 +246,7 @@ async function deleteIllness(req, reply) {
       { $pull: { illnesses: req.params.illnessId } },
       { new: true },
     )
-    reply.code(200).send(req.params.illnessId)
+    reply.code(200).send({ itemId: req.params.illnessId, type: 'illnesses' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)

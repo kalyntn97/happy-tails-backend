@@ -30,6 +30,8 @@ const careCardSchema = new Schema({
   timestamps: true
 })
 
+careCardSchema.index({ pets: 1 })
+
 careCardSchema.pre(['deleteOne', 'deleteMany'], { document: true, query: false }, async function (next) {
   try {
     const careCard = this
