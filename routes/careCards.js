@@ -9,8 +9,8 @@ const careCardsRoutes = async (fastify, opts, done) => {
     .after(() => {
       fastify.addHook('preHandler', fastify.auth([fastify.asyncVerifyJWT]))
     })
-    fastify.get('/:careCardId', careCardsCtrl.show)
     fastify.get('/', careCardsCtrl.index)     
+    fastify.get('/:careCardId', careCardsCtrl.show)
     fastify.post('/', careCardsCtrl.create)
     fastify.put('/:careCardId', careCardsCtrl.update)
     fastify.patch('/:careCardId/:trackerId/check', careCardsCtrl.checkDone)

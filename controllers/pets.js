@@ -107,7 +107,7 @@ async function addId(req, reply) {
       { new: true },
     )
     const newId = pet.ids[pet.ids.length - 1]
-    reply.code(200).send({ item: newId, type: 'ids' })
+    reply.code(200).send({ item: newId, key: 'ids' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -134,7 +134,7 @@ async function deleteId(req, reply) {
       { $pull: { ids: { _id: req.params.idId } } },
       { new: true },
     )
-    reply.code(200).send({ itemId: req.params.idId, type: 'ids' })
+    reply.code(200).send({ itemId: req.params.idId, key: 'ids' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -177,7 +177,7 @@ async function addMed(req, reply) {
       { new: true },
     )
 
-    reply.code(200).send({ item: newMed, type: 'medications' })
+    reply.code(200).send({ item: newMed, key: 'medications' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -189,7 +189,7 @@ async function deleteMed(req, reply) {
     const medication = await Medication.findById(req.params.medId)
     await medication.deleteOne()
   
-    reply.code(200).send({ itemId: req.params.medId, type: 'medications' })
+    reply.code(200).send({ itemId: req.params.medId, key: 'medications' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -204,7 +204,7 @@ async function addService(req, reply) {
       { new: true },
     )
     const newService = pet.services[pet.services.length - 1]
-    reply.code(200).send({ item: newService, type: 'services' })
+    reply.code(200).send({ item: newService, key: 'services' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -218,7 +218,7 @@ async function deleteService(req, reply) {
       { $pull: { services: { _id: req.params.serviceId } } },
       { new: true },
     )
-    reply.code(200).send({ itemId: req.params.serviceId, type: 'services' })
+    reply.code(200).send({ itemId: req.params.serviceId, key: 'services' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -232,7 +232,7 @@ async function addIllness(req, reply) {
       req.params.petId,
       { $push: { illnesses: illness._id } },
     )
-    reply.code(200).send({ item: illness, type: 'illnesses' })
+    reply.code(200).send({ item: illness, key: 'illnesses' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
@@ -246,7 +246,7 @@ async function deleteIllness(req, reply) {
       { $pull: { illnesses: req.params.illnessId } },
       { new: true },
     )
-    reply.code(200).send({ itemId: req.params.illnessId, type: 'illnesses' })
+    reply.code(200).send({ itemId: req.params.illnessId, key: 'illnesses' })
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)

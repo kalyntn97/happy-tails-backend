@@ -6,12 +6,37 @@ import {compareMonthYear, getDateInfo } from "./helper.js"
 async function create(req, reply) {
   try {
     const careCard = await createCareCard(req.body)
-    // send back careCard with populated pets
     reply.code(201).send(careCard)
   } catch (error) {
     console.error(error)
     reply.code(500).send(error)
   }
+}
+
+export const createCareCard = async (formData) => {
+  const { repeat, date, frequency, times } = formData
+  
+  const { month: startMonth, year: startYear, firstDay } = getDateInfo(new Date(date))
+  // create empty tracker
+  let trackers = []
+  if (repeat) {
+    const total = calTotal(times, frequency, new Date())
+    const trackerName = frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`
+    const done = frequency === 'Yearly' ? Array(1).fill({ value: 0 }) : Array(total).fill({ value: 0 })
+    const tracker = {
+      name: trackerName,
+      total: total,
+      done: done,
+      firstDay: frequency === 'Daily' ? firstDay : null,
+    }
+    trackers.push(tracker)
+  } else {
+    trackers.push({ name: 'no-repeat', done: Array(1).fill({ value: 0 })})
+  }
+  formData.trackers = trackers
+  // create new CareCard and save to profile
+  const careCard = await CareCard.create(formData)
+  return careCard
 }
 
 async function deleteCareCard(req, reply) {
@@ -71,13 +96,20 @@ async function index(req, reply) {
 }
 
 export async function verifyIndexUpdate(profile) {
-  const careCards = await CareCard.find(
-    { $or: [
-      { 'pets.admin': profile._id },
-      { 'pets.editors': profile._id },
-    ] }, 
-    { trackers: { $slice: -1 } }
-  ).populate({ path: 'pets', select: 'name color photo icon' })
+  const careCards = await CareCard.aggregate([
+    { $lookup: { from: 'pets', localField: 'pets', foreignField: '_id', as: 'petDetails' } },
+    { $match: { $or: [
+      { 'petDetails.admin': profile._id },
+      { 'petDetails.editors': profile._id },
+    ] } },
+    { $addFields: {
+      trackers: { $slice: ['$trackers', -1] },
+      pets: { $map: {
+        input: '$petDetails', as: 'pet', in: { _id: '$$pet._id', name: '$$pet.name', color: '$$pet.color', photo: '$$pet.photo', icon: '$$pet.icon' }
+      } }
+    } },
+    { $project: { petDetails: 0 } }
+  ])
   let sortedCares = sortByFrequency(careCards)
   //check if a new tracker should be created
   const today = new Date()
@@ -278,33 +310,7 @@ export const sortByFrequency = (careArray) => {
   return sorted
 }
 
-export const createCareCard = async (formData) => {
-  const { repeat, date, frequency, times } = formData
-  
-  const { month: startMonth, year: startYear, firstDay } = getDateInfo(new Date(date))
-  // create empty tracker
-  let trackers = []
-  if (repeat) {
-    const total = calTotal(times, frequency, new Date())
-    const tracker = {
-      name: frequency === 'Yearly' || frequency === 'Monthly' ? startYear : `${startMonth}-${startYear}`,
-      total: total,
-      done: frequency === 'Yearly' ? Array(1).fill({ value: 0 }) : Array(total).fill({ value: 0 }),
-      firstDay: frequency === 'Daily' ? firstDay : null,
-    }
-    trackers.push(tracker)
-  } else {
-    trackers.push({ name: 'no-repeat', done: Array(1).fill({ value: 0 })})
-  }
-  formData.trackers = trackers
-  // create new CareCard and save to profile
-  const careCard = await CareCard.create(formData)
-  await Pet.updateMany(
-    { _id: { $in: careCard.pets } },
-    { $push: { careCards: careCard._id }}
-  )
-  return careCard
-}
+
 
 export {
   create,
