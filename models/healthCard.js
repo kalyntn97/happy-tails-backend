@@ -1,40 +1,39 @@
 import mongoose from "mongoose"
-import { Pet } from "./pet.js"
+import { Visit } from "./visit.js"
 
 const Schema = mongoose.Schema
 
-const visitSchema = new Schema({
-  date: { type: Date },
-  notes: { type: String },
-  overdue: { type: Boolean },
-}, {
-  timestamps: true
-})
-
 const healthCardSchema = new Schema({
-  name: { type: String },
-  type: { type: String },
-  vaccine: { type: String },
-  times: { type: Number, default: 1 },
-  frequency: { type: String},
-  lastDone: [visitSchema],
-  nextDue: visitSchema,
   pet: { type: Schema.Types.ObjectId, ref: 'Pet' },
+  name: { type: String, required: true },
+  details: [{ type: String }],
+  type: { type: String, enum: ['Routine', 'Emergency', 'Illness'] },
+  repeat: { type: Boolean, required: true },
+  frequency: [
+    { type: { type: String, enum: ['days', 'weeks', 'months', 'years'] } },
+    { interval: { type: Number } },
+    { days: { type: [Number] } }, // [1, 3 , 5] for [Mon, Wed, Fri]
+    { timesPerInterval: { type: Number } }, // 2 for twice a day
+  ],
+  lastDone: [{ type: Schema.Types.ObjectId, ref: 'Visit' }],
+  nextDue: { type: Schema.Types.ObjectId, ref: 'Visit' },
 }, {
   timestamps: true
 })
 
 healthCardSchema.index({ pet: 1 })
 
-const HealthCard = mongoose.model('HealthCard', healthCardSchema)
-
 healthCardSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
   try {
     const healthCard = this
-    await Pet.updateOne({ 'healthCards': healthCard._id}, { $pull: { healthCards: healthCard._id}})
+    await Visit.deleteMany({ 'health': healthCard._id })
+    next()
   } catch (error) {
     return next(error)
   }
 })
 
+const HealthCard = mongoose.model('HealthCard', healthCardSchema)
+
 export { HealthCard }
+

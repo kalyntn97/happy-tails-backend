@@ -3,10 +3,11 @@ export function getDateInfo(inputDate) {
   const month = inputDate.getMonth() + 1
   const year = inputDate.getFullYear()
   const firstDayOfMonth = new Date(year, month - 1, 1)
+  const lastDayOfMonth = new Date(year, month, 0)
+  const firstDayOfNextMonth = new Date(year, month, 1)
 
   const firstDay = firstDayOfMonth.getDay()
  
-  const lastDayOfMonth = new Date(year, month, 0)
 
   const daysInMonth = lastDayOfMonth.getDate()
   const weeksInMonth = Math.ceil(daysInMonth / 7)
@@ -17,7 +18,7 @@ export function getDateInfo(inputDate) {
   const week = weeksPassed + 1
   
   return {
-    date, week, month, year, firstDay, daysInMonth, weeksInMonth
+    date, week, month, year, firstDay, daysInMonth, weeksInMonth, firstDayOfMonth, lastDayOfMonth, firstDayOfNextMonth
   }
 }
 

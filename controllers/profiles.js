@@ -25,7 +25,7 @@ export async function initialize(req, reply) {
           { 'pet.admin': profileId },
           { 'pet.editors': profileId },
         ] },
-        { lastDone: { $slice: -1 } }
+        // { lastDone: { $slice: -1 } }
       ).populate({ path: 'pet', select: 'name color photo icon' })
     ])
     reply.code(200).send({ profile, pets, cares, healths })

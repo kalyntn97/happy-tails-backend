@@ -26,16 +26,4 @@ const profileSchema = new Schema({
 
 const Profile = mongoose.model('Profile', profileSchema)
 
-//invoked when profile is deleted
-profileSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
-  try {
-    const profile = this
-    await Pet.deleteMany({ 'parent': profile._id })
-    await CareCard.deleteMany({ '_id': { $in: profile.careCards } })
-    return next()
-  } catch (error) {
-    return next(error)
-  }
-})
-
 export { Profile }
